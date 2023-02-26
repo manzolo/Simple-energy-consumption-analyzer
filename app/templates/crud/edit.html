@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Update Consumption</h1>
+
+    <form class="form" id="update-form">
+        <div class="form-group">
+            <label for="year-input">Year:</label>
+            <input class="form-control" id="year-input" name="year" required type="number">
+        </div>
+        <div class="form-group">
+            <label for="month-input">Month:</label>
+            <input class="form-control" id="month-input" name="month" required type="number">
+        </div>
+        <div class="form-group">
+            <label for="kwh-input">kWh:</label>
+            <input class="form-control" id="kwh-input" name="kwh" required type="number">
+        </div>
+        <div class="form-group">
+            <label for="smc-input">SMC:</label>
+            <input class="form-control" id="smc-input" name="smc" required type="number">
+        </div>
+        <button class="btn btn-primary" type="submit">Update</button>
+    </form>
+</div>
+<script>
+        const consumptionId = {{ consumption_id }}; // get consumption ID from server
+
+
+
+
+</script>
+<script src="{{ url_for('static', filename='js/crud/edit.js') }}" type="text/javascript"></script>
+{% endblock %}

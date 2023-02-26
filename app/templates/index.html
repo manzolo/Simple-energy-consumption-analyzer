@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='js/chart_functions.js') }}" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='js/kwh.js') }}" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='js/smc.js') }}" type="text/javascript"></script>
+<script type="text/javascript">
+		var kwhJsonDataChart = {{ kwh_data | safe }};
+		var smcJsonDataChart = {{ smc_data | safe }};
+
+		var kwhUnitJsonDataChart = {{ kwh_unit_data | safe }};
+		var smcUnitJsonDataChart = {{ smc_unit_data | safe }};
+
+		var kwhMonthJsonDataChart = {{ kwh_month_data | safe }};
+		var smcMonthJsonDataChart = {{ smc_month_data | safe }};
+
+
+
+
+</script>
+<link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" type="text/css">
+<h1>Home consumption</h1>
+
+<div class="tab">
+    <button class="tab-links" onclick="openChart(event, 'kwh_chart_div', kwhJsonDataChart)">KWH Chart</button>
+    <button class="tab-links" onclick="openChart(event, 'smc_chart_div', smcJsonDataChart)">SMC Chart</button>
+    <button class="tab-links" onclick="openChart(event, 'kwh_unit_chart_div', kwhUnitJsonDataChart)">KWH Unit Chart
+    </button>
+    <button class="tab-links" onclick="openChart(event, 'smc_unit_chart_div', smcUnitJsonDataChart)">SMC Unit Chart
+    </button>
+    <button class="tab-links" onclick="openChart(event, 'kwh_month_chart_div', kwhMonthJsonDataChart)">KWH Month Chart
+    </button>
+    <button class="tab-links" onclick="openChart(event, 'smc_month_chart_div', smcMonthJsonDataChart)">SMC Month Chart
+    </button>
+</div>
+
+<div class="tab-content" id="kwh_chart_div"></div>
+<div class="tab-content" id="smc_chart_div"></div>
+<div class="tab-content" id="kwh_unit_chart_div"></div>
+<div class="tab-content" id="smc_unit_chart_div"></div>
+<div class="tab-content" id="kwh_month_chart_div"></div>
+<div class="tab-content" id="smc_month_chart_div"></div>
+
+{% endblock %}

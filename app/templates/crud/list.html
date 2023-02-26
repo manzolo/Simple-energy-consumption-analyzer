@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Consumption Table</h1>
+    <button class="btn btn-primary" data-target="#addModal" data-toggle="modal" onclick="createConsumption()"
+            type="button">Add Record
+    </button>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Year</th>
+            <th>Month</th>
+            <th>kWh</th>
+            <th>SMC</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+</div>
+<div id="pagination-container"></div>
+<script src="{{ url_for('static', filename='js/crud/list.js') }}" type="text/javascript"></script>
+{% endblock %}
