@@ -15,4 +15,4 @@ include/
 bin/
 *.egg-info/
 
-app/data/*.db
+consumption_app/data/*.db

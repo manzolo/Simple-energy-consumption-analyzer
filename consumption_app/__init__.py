@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_bootstrap import Bootstrap5
 
-from app.database.functions import create_db  # Move the import here
+from consumption_app.database.functions import create_db  # Move the import here
 
 
 def create_app():
@@ -20,7 +20,7 @@ def configure_app(app):
     # Load environment variables
     load_dotenv()
 
-    # Configure the Flask app here
+    # Configure the Flask consumption_app here
     app.config['HTTP_PORT'] = int(os.environ.get('SERVER_PORT', 8080))
     app.config['APP_ENV'] = os.environ.get('APP_ENV', 'dev')
 
@@ -29,20 +29,20 @@ def configure_app(app):
 
 
 def register_blueprints(app):
-    from app.chart.homepage import bp as chart_bp
+    from consumption_app.chart.homepage import bp as chart_bp
     app.register_blueprint(chart_bp)
 
     # Register the rest of the blueprints
-    from app.consumption.crud import bp as consumption_bp
+    from consumption_app.consumption.crud import bp as consumption_bp
     app.register_blueprint(consumption_bp)
 
-    from app.consumption.export import bp as consumption_export_bp
+    from consumption_app.consumption.export import bp as consumption_export_bp
     app.register_blueprint(consumption_export_bp)
 
-    from app.cost.crud import bp as cost_bp
+    from consumption_app.cost.crud import bp as cost_bp
     app.register_blueprint(cost_bp)
 
-    from app.cost.export import bp as cost_export_bp
+    from consumption_app.cost.export import bp as cost_export_bp
     app.register_blueprint(cost_export_bp)
 
 

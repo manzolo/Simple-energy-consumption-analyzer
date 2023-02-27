@@ -15,4 +15,4 @@ ENV SERVER_PORT=8000
 #CMD ["flask", "run"]
 
 ENTRYPOINT [""]
-CMD ["python", "/app/app/__init__.py"]
+CMD ["python", "/app/consumption_app/__init__.py"]

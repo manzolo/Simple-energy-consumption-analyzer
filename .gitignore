@@ -25,5 +25,5 @@ htmlcov/
 *,cover
 
 #Project files
-app/data/*.db
+consumption_app/data/*.db
 

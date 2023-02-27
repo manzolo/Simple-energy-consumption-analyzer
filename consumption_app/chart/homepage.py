@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template
 
-from app.chart.kwh import getKwh, getKwhUnitCost, getKwhMonthCost
-from app.chart.smc import getSmc, getSmcUnitCost, getSmcMonthCost
-from app.database.functions import get_db
-from app.database.queries import get_consumption_query
+from consumption_app.chart.kwh import getKwh, getKwhUnitCost, getKwhMonthCost
+from consumption_app.chart.smc import getSmc, getSmcUnitCost, getSmcMonthCost
+from consumption_app.database.functions import get_db
+from consumption_app.database.queries import get_consumption_query
 
 bp = Blueprint('home', __name__)
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 
-from app.database.functions import get_db
+from consumption_app.database.functions import get_db
 
 bp = Blueprint('cost', __name__)
 

@@ -3,7 +3,7 @@ import io
 import xlsxwriter
 from flask import Response, jsonify, Blueprint
 
-from app.database.functions import get_db
+from consumption_app.database.functions import get_db
 
 bp = Blueprint('cost_export', __name__)
 

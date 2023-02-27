@@ -1,4 +1,4 @@
-from app.chart.functions import buildChartData
+from consumption_app.chart.functions import buildChartData
 
 
 def getSmc(query_data):

@@ -1,6 +1,6 @@
 import sqlite3
 
-from app.database.queries import create_cost_table, create_consumption_table
+from consumption_app.database.queries import create_cost_table, create_consumption_table
 from config import app_dir
 
 
