@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, request
 from flask_bootstrap import Bootstrap5
 from wsgiref.simple_server import make_server
 
@@ -20,6 +20,13 @@ def create_app():
     from app.cost import crud
     consumption_app.register_blueprint(cost.crud.bp)
 
+    @consumption_app.before_request
+    def set_real_ip():
+        # Get the real IP address of the client from the WSGI environment
+        real_ip = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
+        # Set the real IP address as a Flask request variable
+        request.real_ip = real_ip
+
     return consumption_app
 
 
@@ -30,6 +37,7 @@ flask_app = create_app()
 if env == 'dev':
     flask_app.run(host='0.0.0.0', port=port, debug=True)
 else:
+    print("Serving on port " + str(port) + "...")
+
     with make_server('', port, flask_app) as httpd:
-        print("Serving on port " + str(port) + "...")
         httpd.serve_forever()

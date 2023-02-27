@@ -1,10 +1,11 @@
 import sqlite3
 
 from app.database.queries import create_cost_table, create_consumption_table
+from config import app_dir
 
 
 def get_db():
-    return sqlite3.connect('consumption.db')
+    return sqlite3.connect(app_dir+'/data/consumption.db')
 
 
 def create_db():

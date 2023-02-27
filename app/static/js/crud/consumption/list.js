@@ -50,23 +50,24 @@ function getConsumptions(page, pageSize) {
       };
 
       return response.json().then(data => {
+        if (data.length > 0) {
         // Render table rows
         let html = '';
-        data.forEach(consumption => {
-          html += `<tr>
-                     <td>${consumption.id}</td>
-                     <td>${consumption.year}</td>
-                     <td>${consumption.month}</td>
-                     <td>${consumption.kwh}</td>
-                     <td>${consumption.smc}</td>
-                     <td>
-                       <button class="btn btn-sm btn-warning" onclick="editConsumption(${consumption.id})">Edit</button>
-                       <button class="btn btn-sm btn-danger" onclick="deleteConsumption(${consumption.id})">Delete</button>
-                     </td>
-                   </tr>`;
-        });
-        tableBody.innerHTML = html;
-
+            data.forEach(consumption => {
+              html += `<tr>
+                         <td>${consumption.id}</td>
+                         <td>${consumption.year}</td>
+                         <td>${consumption.month}</td>
+                         <td>${consumption.kwh}</td>
+                         <td>${consumption.smc}</td>
+                         <td>
+                           <button class="btn btn-sm btn-warning" onclick="editConsumption(${consumption.id})">Edit</button>
+                           <button class="btn btn-sm btn-danger" onclick="deleteConsumption(${consumption.id})">Delete</button>
+                         </td>
+                       </tr>`;
+            });
+            tableBody.innerHTML = html;
+        }
         const paginationHtml = generatePaginationLinks(current_page, total_count, page_size);
         paginationContainer.innerHTML = `<ul class="pagination">${paginationHtml}</ul>`;
         // Return data and response headers

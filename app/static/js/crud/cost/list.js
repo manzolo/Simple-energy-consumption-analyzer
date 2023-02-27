@@ -50,25 +50,26 @@ function getCosts(page, pageSize) {
       };
 
       return response.json().then(data => {
-        // Render table rows
-        let html = '';
-        data.forEach(cost => {
-          html += `<tr>
-                     <td>${cost.id}</td>
-                     <td>${cost.start}</td>
-                     <td>${cost.end}</td>
-                     <td>${cost.kwh}</td>
-                     <td>${cost.smc}</td>
-                     <td>${cost.kwh_cost}</td>
-                     <td>${cost.smc_cost}</td>
-                     <td>
-                       <button class="btn btn-sm btn-warning" onclick="editCost(${cost.id})">Edit</button>
-                       <button class="btn btn-sm btn-danger" onclick="deleteCost(${cost.id})">Delete</button>
-                     </td>
-                   </tr>`;
-        });
-        tableBody.innerHTML = html;
-
+        if (data.length > 0) {
+            // Render table rows
+            let html = '';
+            data.forEach(cost => {
+              html += `<tr>
+                         <td>${cost.id}</td>
+                         <td>${cost.start}</td>
+                         <td>${cost.end}</td>
+                         <td>${cost.kwh}</td>
+                         <td>${cost.smc}</td>
+                         <td>${cost.kwh_cost}</td>
+                         <td>${cost.smc_cost}</td>
+                         <td>
+                           <button class="btn btn-sm btn-warning" onclick="editCost(${cost.id})">Edit</button>
+                           <button class="btn btn-sm btn-danger" onclick="deleteCost(${cost.id})">Delete</button>
+                         </td>
+                       </tr>`;
+            });
+            tableBody.innerHTML = html;
+        }
         const paginationHtml = generatePaginationLinks(current_page, total_count, page_size);
         paginationContainer.innerHTML = `<ul class="pagination">${paginationHtml}</ul>`;
         // Return data and response headers
