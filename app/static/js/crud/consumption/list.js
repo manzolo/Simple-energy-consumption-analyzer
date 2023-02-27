@@ -78,19 +78,6 @@ function getConsumptions(page, pageSize) {
 
 getConsumptions(urlParams.get('page'),urlParams.get('page_size'));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 function createConsumption() {
 location.href='/consumption/create'
 }

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 
 from app.database.functions import get_db
 
-bp = Blueprint('crud', __name__)
+bp = Blueprint('consumption', __name__)
 
 
 @bp.route('/example')
@@ -99,17 +99,17 @@ def get_consumption(consumption_id):
 
 @bp.route('/consumption/create', methods=['GET'])
 def create():
-    return render_template('crud/create.html')
+    return render_template('crud/consumption/create.html')
 
 
 @bp.route('/consumption/list', methods=['GET'])
 def list():
-    return render_template('crud/list.html')
+    return render_template('crud/consumption/list.html')
 
 
 @bp.route('/consumption/edit/<int:consumption_id>', methods=['GET'])
 def update(consumption_id):
-    return render_template('crud/edit.html', consumption_id=consumption_id)
+    return render_template('crud/consumption/edit.html', consumption_id=consumption_id)
 
 
 # Add a new record

@@ -5,28 +5,14 @@
 <head>
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
-    <title>Bootstrap-Flask Demo Application</title>
+    <title>{% block title %}Energy monitor{% endblock %}</title>
     <link href="{{ url_for('static', filename='favicon.ico') }}" rel="icon">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/vendor/jquery/jquery-3.6.0.min.js') }}" type="text/javascript"></script>
     <script src="{{ url_for('static', filename='js/toast.js') }}" type="text/javascript"></script>
+    {% block javascript %}{% endblock %}
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" type="text/css">
     {{ bootstrap.load_css() }}
-    <style>
-        pre {
-            background: #ddd;
-            padding: 10px;
-        }
-        h2 {
-            margin-top: 20px;
-        }
-        footer {
-            margin: 20px;
-        }
-
-
-
-
-    </style>
+    {% block css %}{% endblock %}
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
@@ -39,7 +25,8 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
                 {{ render_nav_item('home.index', 'Home') }}
-                {{ render_nav_item('crud.list', 'List') }}
+                {{ render_nav_item('consumption.list', 'Consumption') }}
+                {{ render_nav_item('cost.list', 'Cost') }}
             </ul>
         </div>
     </div>
@@ -62,6 +49,6 @@
 </main>
 
 {{ bootstrap.load_js() }}
-
+{% block endbody %}{% endblock %}
 </body>
 </html>

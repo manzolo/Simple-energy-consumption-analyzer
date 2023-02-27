@@ -31,7 +31,7 @@ def index():
     smc_month_data = getSmcMonthCost(query_data)
 
     # pprint(data_list)
-    return render_template('index.html',
+    return render_template('chart.html',
                            kwh_data=kwh_data, smc_data=smc_data,
                            kwh_unit_data=kwh_unit_data, smc_unit_data=smc_unit_data,
                            kwh_month_data=kwh_month_data, smc_month_data=smc_month_data,

@@ -1,6 +1,6 @@
-<html>
-
-<head>
+{% extends 'base.html' %}
+{% block title %}Example{% endblock %}
+{% block content %}
     <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
     <script type="text/javascript">
     google.charts.load('current', { 'packages': ['bar'] });
@@ -9,15 +9,16 @@
     function drawChart() {
 
       var data = google.visualization.arrayToDataTable([
-        ['Mese', '2019', '2020', '2021'],
-        [1, 1000, 1100, 900],
-        [2, 1100, 1200, 800],
+        ['Month', '2019', '2020', '2021', '2022'],
+        [1, 1000, 1100, 900, 2000],
+        [2, 1100, 1200, 800, 1500],
+        [3, 1200, 1300, 900, 1500],
       ]);
 
       var options = {
         chart: {
-          title: 'Company Performance',
-          subtitle: 'Sales, Expenses, and Profit: 2014-2017',
+          title: 'Example data',
+          subtitle: 'Sales, Expenses, and Profit: 2019-2022',
         }
       };
 
@@ -25,15 +26,9 @@
 
       chart.draw(data, google.charts.Bar.convertOptions(options));
     }
-
-
-
-
     </script>
 </head>
 
-<body>
 <div id="columnchart_material" style="width: 800px; height: 500px;"></div>
-</body>
 
-</html>
+{% endblock %}

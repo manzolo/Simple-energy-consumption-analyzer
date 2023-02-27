@@ -16,3 +16,6 @@ function openChart(evt, chartName, chartData) {
         kwh_drawChart(chartData, chartName);
     });
 }
+$(document).ready(function(){
+    document.querySelector('.tab-links.active').click();
+});
