@@ -1,1 +1,18 @@
+# Ignore Python bytecode files
+__pycache__/
+*.pyc
+
+# Ignore development-specific files
+*.log
+*.swp
+*.sqlite3
+
+# Ignore virtual environment files
+venv/
+.pip/
+lib/
+include/
+bin/
+*.egg-info/
+
 app/data/*.db

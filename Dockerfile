@@ -12,6 +12,7 @@ ENV APP_ENV=prod
 ENV SERVER_PORT=8000
 
 # Esegui l'applicazione quando il container è avviato
-CMD ["flask", "run"]
+#CMD ["flask", "run"]
 
-
+ENTRYPOINT [""]
+CMD ["python", "/app/app/__init__.py"]

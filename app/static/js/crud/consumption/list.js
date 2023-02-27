@@ -83,6 +83,10 @@ function createConsumption() {
 location.href='/consumption/create'
 }
 
+function exportConsumption() {
+location.href='/consumption/export'
+}
+
 function deleteConsumption(id) {
   const confirmed = confirm("Are you sure you want to delete this record?");
   if (!confirmed) {

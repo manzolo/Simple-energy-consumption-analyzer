@@ -81,6 +81,10 @@ function getCosts(page, pageSize) {
 
 getCosts(urlParams.get('page'),urlParams.get('page_size'));
 
+function exportCost() {
+location.href='/cost/export'
+}
+
 function createCost() {
 location.href='/cost/create'
 }

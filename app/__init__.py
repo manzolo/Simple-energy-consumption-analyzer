@@ -1,43 +1,59 @@
 import os
-from flask import Flask, request
-from flask_bootstrap import Bootstrap5
 from wsgiref.simple_server import make_server
 
-from app.chart.homepage import bp
-from app.database.functions import create_db
+from dotenv import load_dotenv
+from flask import Flask
+from flask_bootstrap import Bootstrap5
+
+from app.database.functions import create_db  # Move the import here
 
 
 def create_app():
-    consumption_app = Flask(__name__)
-    bootstrap = Bootstrap5(consumption_app)
-
-    from . import chart
-    consumption_app.register_blueprint(chart.homepage.bp)
-
-    from app.consumption import crud
-    consumption_app.register_blueprint(consumption.crud.bp)
-
-    from app.cost import crud
-    consumption_app.register_blueprint(cost.crud.bp)
-
-    @consumption_app.before_request
-    def set_real_ip():
-        # Get the real IP address of the client from the WSGI environment
-        real_ip = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
-        # Set the real IP address as a Flask request variable
-        request.real_ip = real_ip
-
-    return consumption_app
+    app = Flask(__name__)
+    configure_app(app)
+    register_blueprints(app)
+    create_db()  # Call create_db here
+    return app
 
 
-port = int(os.environ.get('SERVER_PORT', 8080))
-env = os.environ.get('APP_ENV', 'dev')
-create_db()
-flask_app = create_app()
-if env == 'dev':
-    flask_app.run(host='0.0.0.0', port=port, debug=True)
-else:
-    print("Serving on port " + str(port) + "...")
+def configure_app(app):
+    # Load environment variables
+    load_dotenv()
 
-    with make_server('', port, flask_app) as httpd:
-        httpd.serve_forever()
+    # Configure the Flask app here
+    app.config['HTTP_PORT'] = int(os.environ.get('SERVER_PORT', 8080))
+    app.config['APP_ENV'] = os.environ.get('APP_ENV', 'dev')
+
+    # Initialize Bootstrap5 extensions
+    Bootstrap5(app)
+
+
+def register_blueprints(app):
+    from app.chart.homepage import bp as chart_bp
+    app.register_blueprint(chart_bp)
+
+    # Register the rest of the blueprints
+    from app.consumption.crud import bp as consumption_bp
+    app.register_blueprint(consumption_bp)
+
+    from app.consumption.export import bp as consumption_export_bp
+    app.register_blueprint(consumption_export_bp)
+
+    from app.cost.crud import bp as cost_bp
+    app.register_blueprint(cost_bp)
+
+    from app.cost.export import bp as cost_export_bp
+    app.register_blueprint(cost_export_bp)
+
+
+if __name__ == '__main__':
+    flask_app = create_app()
+
+    port = flask_app.config.get('HTTP_PORT')
+    if flask_app.config.get('APP_ENV') == 'dev':
+        flask_app.run(host='0.0.0.0', port=port, debug=True)
+    else:
+        print("Serving on port " + str(port) + "...")
+
+        with make_server('', port, flask_app) as httpd:
+            httpd.serve_forever()
