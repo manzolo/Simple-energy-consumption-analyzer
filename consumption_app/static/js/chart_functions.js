@@ -39,6 +39,7 @@ const openChart = (evt, chartName, chartData) => {
   if (Object.keys(chartData).length !== 0 && chartData.body.length > 0) {
     const options = {
       title: chartData.chart_title,
+      curveType: 'function',
       legend: { position: 'bottom' },
       hAxis: {
         title: 'Year',
