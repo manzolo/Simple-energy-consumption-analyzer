@@ -46,7 +46,7 @@ def buildChartData(query_data, data_chart_type):
             if year in data[month]:
                 row.append(data[month][year])
             else:
-                row.append(0)
+                row.append(None)
         chart_data.append(row)
 
     # Convert the data to JSON format

@@ -2,12 +2,11 @@
 
 {% block javascript %}
 <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
-<script src="{{ url_for('static', filename='js/chart_year_functions.js') }}" type="text/javascript"></script>
-<script src="{{ url_for('static', filename='js/kwh.js') }}" type="text/javascript"></script>
-<script src="{{ url_for('static', filename='js/smc.js') }}" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='js/chart_functions.js') }}" type="text/javascript"></script>
 <script type="text/javascript">
 		var kwhYearJsonDataChart = {{ kwh_data | safe }};
 		var smcYearJsonDataChart = {{ smc_data | safe }};
+
 
 
 
@@ -19,9 +18,10 @@
 {% endblock %}
 
 {% block content %}
-
-<h1>Home consumption</h1>
-
+<div class="form-check form-switch">
+    <input class="form-check-input" id="ChangeChartType" type="checkbox">
+    <label class="form-check-label" for="ChangeChartType">Line chart</label>
+</div>
 <div class="tab">
     <button class="tab-links active" onclick="openChart(event, 'kwh_year_chart_div', kwhYearJsonDataChart)">KWH Chart
     </button>
