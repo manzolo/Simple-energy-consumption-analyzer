@@ -1,6 +1,0 @@
-Flask~=2.2.2
-app~=0.0.1
-python-dotenv~=1.0.0
-waitress~=2.1.2
-XlsxWriter~=3.0.8
-setuptools~=66.1.1
