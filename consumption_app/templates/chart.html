@@ -22,10 +22,19 @@
 {% block content %}
 
 <h1>Home consumption</h1>
-<div class="form-check form-switch">
-    <input class="form-check-input" id="ChangeChartType" type="checkbox">
-    <label class="form-check-label" for="ChangeChartType">Line chart</label>
+<div class="form-check form-check-inline">
+    <input class="form-check-input" id="bar" name="chartType" type="radio" value="bar">
+    <label class="form-check-label" for="bar">Bar Chart</label>
 </div>
+<div class="form-check form-check-inline">
+    <input class="form-check-input" id="line" name="chartType" type="radio" value="line">
+    <label class="form-check-label" for="line">Line Chart</label>
+</div>
+<div class="form-check form-check-inline">
+    <input class="form-check-input" id="curve-line" name="chartType" type="radio" value="curve-line">
+    <label class="form-check-label" for="curve-line">Curve Line Chart</label>
+</div>
+
 <div class="tab">
     <button class="tab-links active" onclick="openChart(event, 'kwh_chart_div', kwhJsonDataChart)">KWH Chart</button>
     <button class="tab-links" onclick="openChart(event, 'smc_chart_div', smcJsonDataChart)">SMC Chart</button>

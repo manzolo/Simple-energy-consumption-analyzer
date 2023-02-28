@@ -1,29 +1,26 @@
-let chartType;
+let chartType = "bar"; // Default chart type bar
 
 $(document).ready(() => {
 
-  // Get references to the checkbox and chart
-  const checkbox = document.getElementById("ChangeChartType");
-
-  // Determine the initial chart type based on the checkbox state
-  chartType = getChartType(checkbox);
-
-  // Add an event listener to the checkbox
-  checkbox.addEventListener("change", () => {
-    // Determine which chart type to switch to
-    chartType = getChartType(checkbox);
-    document.querySelector('.tab-links.active').click();
-  });
-
+    const radioButtons = document.querySelectorAll('input[name="chartType"]');
+    radioButtons.forEach((radioButton) => {
+      if (radioButton.value === "bar") {
+        radioButton.checked = true;
+        chartType = "bar";
+      }
+    });
+    radioButtons.forEach((radioButton) => {
+      radioButton.addEventListener("click", () => {
+        chartType = radioButton.value;
+        // call function to redraw chart with new chartType
+        document.querySelector('.tab-links.active').click();
+      });
+    });
   // Display the initial chart
   document.querySelector('.tab-links.active').click();
-
 });
 
-const getChartType = checkbox => {
-  // Determine the initial chart type based on the checkbox state
-  return checkbox.checked ? "line" : "bar";
-}
+
 
 const openChart = (evt, chartName, chartData) => {
   const tabcontents = document.querySelectorAll(".tab-content");
@@ -57,13 +54,15 @@ const openChart = (evt, chartName, chartData) => {
 }
 
 const drawChart = (jsonDataChart, container_div_id, chartType, options) => {
-  google.charts.load('current', { packages: [chartType === 'line' ? 'corechart' : 'bar'] });
+  google.charts.load('current', { packages: ['line', 'corechart', 'bar'] });
   google.charts.setOnLoadCallback(() => {
     const data = new google.visualization.arrayToDataTable([jsonDataChart.header].concat(jsonDataChart.body));
     let chart;
     if (chartType === 'bar') {
       chart = new google.charts.Bar(document.getElementById(container_div_id));
     } else if (chartType === 'line') {
+        chart = new google.charts.Line(document.getElementById(container_div_id));
+    } else if (chartType === 'curve-line') {
       chart = new google.visualization.LineChart(document.getElementById(container_div_id));
     }
     chart.draw(data, options);
