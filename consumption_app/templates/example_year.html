@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Example{% endblock %}
+{% block content %}
+<script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
+<script type="text/javascript">
+    google.charts.load('current', { 'packages': ['corechart'] });
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+
+      var data = google.visualization.arrayToDataTable([
+        ['Year', 'Value'],
+        [2020, 1000],
+        [2021, 1100],
+        [2022, 1200],
+      ]);
+
+      var options = {
+        chart: {
+          title: 'Example data',
+          subtitle: 'Sales, Expenses, and Profit: 2019-2022',
+          series: {0: { dataLabels: { format: '#' } },1: { dataLabels: { format: '#' } }}
+        }
+      };
+
+      var chart = new google.visualization.ColumnChart(document.getElementById('columnchart_material'));
+      chart.draw(data, options);
+      }
+
+
+</script>
+
+<div id="columnchart_material" style="width: 800px; height: 500px;"></div>
+
+{% endblock %}

@@ -10,6 +10,11 @@ def example():
     return render_template('example.html')
 
 
+@bp.route('/example_year')
+def example_year():
+    return render_template('example_year.html')
+
+
 # # Display all records
 # @bp.route('/consumption', methods=['GET'])
 # def get_all_consumptions():

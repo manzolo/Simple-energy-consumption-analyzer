@@ -1,8 +1,12 @@
-from consumption_app.chart.functions import buildChartData
+from consumption_app.chart.functions import buildChartData, buildChartYearData
 
 
 def getSmc(query_data):
     return buildChartData(query_data, "smc")
+
+
+def getSmcYear(query_data):
+    return buildChartYearData(query_data, "smc_year")
 
 
 def getSmcUnitCost(query_data):
