@@ -64,7 +64,10 @@ const drawChart = (jsonDataChart, container_div_id, chartType, options) => {
         chart = new google.charts.Line(document.getElementById(container_div_id));
     } else if (chartType === 'curve-line') {
       chart = new google.visualization.LineChart(document.getElementById(container_div_id));
+    } else if (chartType === 'pie') {
+      chart = new google.visualization.PieChart(document.getElementById(container_div_id));
     }
+
     chart.draw(data, options);
   });
 }
