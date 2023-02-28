@@ -1,4 +1,5 @@
 import io
+from datetime import datetime
 
 import xlsxwriter
 from flask import Response, jsonify, Blueprint
@@ -37,8 +38,14 @@ def export_all_costs():
         # Write the cost data to the worksheet
         for row_num, row in enumerate(rows):
             for col_num, value in enumerate(row):
-                worksheet.write(row_num + 1, col_num, value)
-
+                # Format the date column if it exists
+                if 1 <= col_num <= 2 and value is not None:
+                    value = datetime.strptime(value, "%Y-%m-%d")
+                    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
+                    worksheet.set_column(col_num, col_num, None, date_format)
+                    worksheet.write(row_num + 1, col_num, value, date_format)
+                else:
+                    worksheet.write(row_num + 1, col_num, value)
         # Close the workbook and write the output to a BytesIO object
         workbook.close()
         output.seek(0)
