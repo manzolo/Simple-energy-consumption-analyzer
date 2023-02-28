@@ -56,8 +56,8 @@ function getCosts(page, pageSize) {
             data.forEach(cost => {
               html += `<tr>
                          <td>${cost.id}</td>
-                         <td>${cost.start}</td>
-                         <td>${cost.end}</td>
+                         <td>${new Date(cost.start).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'})}</td>
+                         <td>${cost.end ? new Date(cost.end).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}) : ''}</td>
                          <td>${cost.kwh}</td>
                          <td>${cost.smc}</td>
                          <td>${cost.kwh_cost}</td>
