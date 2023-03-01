@@ -34,20 +34,20 @@ async function getData(endpoint, renderFunction, page, pageSize) {
     tableBody.innerHTML = renderedData;
   }
 
-  const paginationHtml = generatePaginationLinks(current_page, total_count, page_size);
+  const paginationHtml = generatePaginationLinks(endpoint, current_page, total_count, page_size);
   paginationContainer.innerHTML = `<ul class="pagination">${paginationHtml}</ul>`;
 
   const result = { data, pagination: response_headers };
   return [result, 200, response_headers];
 }
 
-function generatePaginationLinks(currentPage, totalRecords, pageSize) {
+function generatePaginationLinks(endpoint, currentPage, totalRecords, pageSize) {
   const totalPages = Math.ceil(totalRecords / pageSize);
   let html = '';
 
   // Generate previous button
   if (currentPage > 1) {
-    html += `<li class="page-item"><a class="page-link" href="?page=${currentPage - 1}&page_size=${pageSize}">Prev</a></li>`;
+    html += `<li class="page-item"><a class="page-link" onclick="fetchData('${endpoint}', ${currentPage - 1}, ${pageSize})">Prev</a></li>`;
   } else {
     html += `<li class="page-item disabled"><span class="page-link">Prev</span></li>`;
   }
@@ -57,13 +57,13 @@ function generatePaginationLinks(currentPage, totalRecords, pageSize) {
     if (i === currentPage) {
       html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
     } else {
-      html += `<li class="page-item"><a class="page-link" href="?page=${i}&page_size=${pageSize}">${i}</a></li>`;
+      html += `<li class="page-item"><a class="page-link" onclick="fetchData('${endpoint}', ${i}, ${pageSize})">${i}</a></li>`;
     }
   }
 
   // Generate next button
   if (currentPage < totalPages) {
-    html += `<li class="page-item"><a class="page-link" href="?page=${currentPage + 1}&page_size=${pageSize}">Next</a></li>`;
+    html += `<li class="page-item"><a class="page-link" onclick="fetchData('${endpoint}', ${currentPage + 1}, ${pageSize})">Next</a></li>`;
   } else {
     html += `<li class="page-item disabled"><span class="page-link">Next</span></li>`;
   }
