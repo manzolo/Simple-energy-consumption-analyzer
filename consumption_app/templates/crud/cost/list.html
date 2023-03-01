@@ -7,11 +7,12 @@
 
 {% block content %}
 <div class="container mt-5">
+
     <h1 class="mb-4">Cost Table</h1>
-    <button class="btn btn-primary" data-target="#addModal" data-toggle="modal" onclick="createCost()"
-            type="button">Add Record
+    <button class="btn btn-primary" data-target="#addModal" data-toggle="modal" onclick="addCost()" type="button">Add
+        Record
     </button>
-    <table class="table">
+    <table class="table" id="costs-table">
         <thead>
         <tr>
             <th>ID</th>
@@ -19,9 +20,9 @@
             <th>End</th>
             <th>kWh</th>
             <th>SMC</th>
-            <th>Kwh cost</th>
-            <th>SMC cost</th>
-            <th>Action</th>
+            <th>kWh Cost</th>
+            <th>SMC Cost</th>
+            <th>Actions</th>
         </tr>
         </thead>
         <tbody id="table-body">
