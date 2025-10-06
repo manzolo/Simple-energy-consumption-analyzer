@@ -1,7 +1,6 @@
 let chartType = "bar"; // Default chart type bar
 
 $(document).ready(() => {
-    google.charts.load('current', { packages: ['line', 'corechart', 'bar'] });
     const radioButtons = document.querySelectorAll('input[name="chartType"]');
     radioButtons.forEach((radioButton) => {
       if (radioButton.value === "bar") {
@@ -21,34 +20,60 @@ $(document).ready(() => {
 
 // Funzione per ridisegnare i grafici visibili
 function redrawVisibleCharts() {
-    const options = {
-        curveType: 'function',
-        legend: { position: 'bottom' },
-        height: 450
-    };
-
-    // Check which tab is active and redraw only that chart
-    if ($('#kwh-tab').hasClass('active')) {
+    // Grafici principali (sempre visibili)
+    if (typeof kwhJsonDataChart !== 'undefined') {
         drawChart(kwhJsonDataChart, 'kwh_chart_div', chartType, {
-            ...options,
             title: 'Monthly Electricity Consumption',
-            vAxis: { title: 'kWh' }
+            curveType: 'function',
+            legend: { position: 'bottom' },
+            height: 200,
+            vAxis: { title: 'kWh', format: '0' }
         });
-    } else if ($('#smc-tab').hasClass('active')) {
+    }
+    
+    if (typeof smcJsonDataChart !== 'undefined') {
         drawChart(smcJsonDataChart, 'smc_chart_div', chartType, {
-            ...options,
             title: 'Monthly Gas Consumption',
-            vAxis: { title: 'Smc' }
+            curveType: 'function',
+            legend: { position: 'bottom' },
+            height: 200,
+            vAxis: { title: 'Smc', format: '0' }
         });
     }
     
     // Grafici dettagliati (solo se il collapse è aperto)
     if ($('#detailedChartsCollapse').hasClass('show')) {
-        const detailedOptions = { ...options, height: 300 };
-        drawChart(kwhUnitJsonDataChart, 'kwh_unit_chart_div', chartType, detailedOptions);
-        drawChart(smcUnitJsonDataChart, 'smc_unit_chart_div', chartType, detailedOptions);
-        drawChart(kwhMonthJsonDataChart, 'kwh_month_chart_div', chartType, detailedOptions);
-        drawChart(smcMonthJsonDataChart, 'smc_month_chart_div', chartType, detailedOptions);
+        if (typeof kwhUnitJsonDataChart !== 'undefined') {
+            drawChart(kwhUnitJsonDataChart, 'kwh_unit_chart_div', chartType, {
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                height: 300
+            });
+        }
+        
+        if (typeof smcUnitJsonDataChart !== 'undefined') {
+            drawChart(smcUnitJsonDataChart, 'smc_unit_chart_div', chartType, {
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                height: 300
+            });
+        }
+        
+        if (typeof kwhMonthJsonDataChart !== 'undefined') {
+            drawChart(kwhMonthJsonDataChart, 'kwh_month_chart_div', chartType, {
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                height: 300
+            });
+        }
+        
+        if (typeof smcMonthJsonDataChart !== 'undefined') {
+            drawChart(smcMonthJsonDataChart, 'smc_month_chart_div', chartType, {
+                curveType: 'function',
+                legend: { position: 'bottom' },
+                height: 300
+            });
+        }
     }
 }
 
@@ -84,7 +109,7 @@ const openChart = (evt, chartName, chartData) => {
 }
 
 const drawChart = (jsonDataChart, container_div_id, chartType, options) => {
-  
+  google.charts.load('current', { packages: ['line', 'corechart', 'bar'] });
   google.charts.setOnLoadCallback(() => {
     const data = new google.visualization.arrayToDataTable([jsonDataChart.header].concat(jsonDataChart.body));
     let chart;

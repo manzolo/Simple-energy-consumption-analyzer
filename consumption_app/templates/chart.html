@@ -87,7 +87,7 @@
 
 {% block content %}
 <!-- Dashboard Header -->
-<div class="dashboard-header">
+<!-- <div class="dashboard-header">
     <div class="row align-items-center">
         <div class="col-md-8">
             <h1 class="mb-2">
@@ -101,7 +101,50 @@
             </a>
         </div>
     </div>
+</div> -->
+
+<!-- Chart Type Selection -->
+<div class="chart-controls">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h5 class="mb-3 mb-md-0">
+                <i class="bi bi-graph-up"></i> Chart Type
+            </h5>
+        </div>
+        <div class="col-md-6">
+            <div class="btn-group w-100" role="group">
+                <input class="btn-check" id="bar" name="chartType" type="radio" value="bar" checked>
+                <label class="chart-type-btn" for="bar">
+                    <i class="bi bi-bar-chart-fill"></i> Bar
+                </label>
+
+                <input class="btn-check" id="line" name="chartType" type="radio" value="line">
+                <label class="chart-type-btn" for="line">
+                    <i class="bi bi-graph-up"></i> Line
+                </label>
+
+                <input class="btn-check" id="curve-line" name="chartType" type="radio" value="curve-line">
+                <label class="chart-type-btn" for="curve-line">
+                    <i class="bi bi-bezier2"></i> Curve
+                </label>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Main Consumption Charts -->
+<h4 class="mb-3"><i class="bi bi-activity"></i> Consumption Overview</h4>
+<div class="main-charts">
+    <div class="chart-card">
+        <h5><i class="bi bi-lightning-charge text-primary"></i> Electricity Consumption (kWh)</h5>
+        <div id="kwh_chart_div" style="height: 200px;"></div>
+    </div>
+    <div class="chart-card">
+        <h5><i class="bi bi-fire text-danger"></i> Gas Consumption (Smc)</h5>
+        <div id="smc_chart_div" style="height: 200px;"></div>
+    </div>
+</div>
+
 
 <!-- Statistics Section (Collapsible) -->
 <div class="card mb-4">
@@ -146,48 +189,6 @@
                 <!-- Will be populated by JavaScript -->
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Chart Type Selection -->
-<div class="chart-controls">
-    <div class="row align-items-center">
-        <div class="col-md-6">
-            <h5 class="mb-3 mb-md-0">
-                <i class="bi bi-graph-up"></i> Chart Type
-            </h5>
-        </div>
-        <div class="col-md-6">
-            <div class="btn-group w-100" role="group">
-                <input class="btn-check" id="bar" name="chartType" type="radio" value="bar" checked>
-                <label class="chart-type-btn" for="bar">
-                    <i class="bi bi-bar-chart-fill"></i> Bar
-                </label>
-
-                <input class="btn-check" id="line" name="chartType" type="radio" value="line">
-                <label class="chart-type-btn" for="line">
-                    <i class="bi bi-graph-up"></i> Line
-                </label>
-
-                <input class="btn-check" id="curve-line" name="chartType" type="radio" value="curve-line">
-                <label class="chart-type-btn" for="curve-line">
-                    <i class="bi bi-bezier2"></i> Curve
-                </label>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Main Consumption Charts -->
-<h4 class="mb-3"><i class="bi bi-activity"></i> Consumption Overview</h4>
-<div class="main-charts">
-    <div class="chart-card">
-        <h5><i class="bi bi-lightning-charge text-primary"></i> Electricity Consumption (kWh)</h5>
-        <div id="kwh_chart_div" style="height: 400px;"></div>
-    </div>
-    <div class="chart-card">
-        <h5><i class="bi bi-fire text-danger"></i> Gas Consumption (Smc)</h5>
-        <div id="smc_chart_div" style="height: 400px;"></div>
     </div>
 </div>
 
@@ -434,7 +435,7 @@
         const options = {
             curveType: 'function',
             legend: { position: 'bottom' },
-            height: 400
+            height: 200
         };
 
         drawChart(kwhJsonDataChart, 'kwh_chart_div', chartType, {
