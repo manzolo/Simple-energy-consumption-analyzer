@@ -4,59 +4,493 @@
 <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
 <script src="{{ url_for('static', filename='js/chart_functions.js') }}" type="text/javascript"></script>
 <script type="text/javascript">
-		var kwhJsonDataChart = {{ kwh_data | safe }};
-		var smcJsonDataChart = {{ smc_data | safe }};
-
-		var kwhUnitJsonDataChart = {{ kwh_unit_data | safe }};
-		var smcUnitJsonDataChart = {{ smc_unit_data | safe }};
-
-		var kwhMonthJsonDataChart = {{ kwh_month_data | safe }};
-		var smcMonthJsonDataChart = {{ smc_month_data | safe }};
+    var kwhJsonDataChart = {{ kwh_data | safe }};
+    var smcJsonDataChart = {{ smc_data | safe }};
+    var kwhUnitJsonDataChart = {{ kwh_unit_data | safe }};
+    var smcUnitJsonDataChart = {{ smc_unit_data | safe }};
+    var kwhMonthJsonDataChart = {{ kwh_month_data | safe }};
+    var smcMonthJsonDataChart = {{ smc_month_data | safe }};
 </script>
 {% endblock %}
 
 {% block css %}
 <link href="{{ url_for('static', filename='css/chart.css') }}" rel="stylesheet" type="text/css">
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .chart-controls {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+    }
+
+    .chart-type-btn {
+        border: 2px solid #e9ecef;
+        background: white;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        margin: 0 0.25rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .chart-type-btn:hover {
+        border-color: #667eea;
+        background: #f8f9fa;
+    }
+
+    .chart-type-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+        margin-bottom: 1.5rem;
+    }
+
+    .main-charts {
+        display: grid;
+        grid-template-columns: 1fr;
+        /* Una sola colonna */
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+    }
+
+    .chart-card h5 {
+        margin-bottom: 1rem;
+        color: #495057;
+        font-weight: 600;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-
-<h1>Home consumption</h1>
-<div class="form-check form-check-inline">
-    <input class="form-check-input" id="bar" name="chartType" type="radio" value="bar">
-    <label class="form-check-label" for="bar">Bar Chart</label>
-</div>
-<div class="form-check form-check-inline">
-    <input class="form-check-input" id="line" name="chartType" type="radio" value="line">
-    <label class="form-check-label" for="line">Line Chart</label>
-</div>
-<div class="form-check form-check-inline">
-    <input class="form-check-input" id="curve-line" name="chartType" type="radio" value="curve-line">
-    <label class="form-check-label" for="curve-line">Curve Line Chart</label>
-</div>
-<div class="form-check form-check-inline">
-    <input class="form-check-input" id="pie" name="chartType" type="radio" value="pie">
-    <label class="form-check-label" for="pie">Pie</label>
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="mb-2">
+                <i class="bi bi-lightning-charge-fill"></i> Energy Dashboard
+            </h1>
+            <p class="mb-0 opacity-75">Monitor your home energy consumption</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/consumption/create" class="btn btn-light">
+                <i class="bi bi-plus-circle"></i> Add Data
+            </a>
+        </div>
+    </div>
 </div>
 
-<div class="tab">
-    <button class="tab-links active" onclick="openChart(event, 'kwh_chart_div', kwhJsonDataChart)">KWH Chart</button>
-    <button class="tab-links" onclick="openChart(event, 'smc_chart_div', smcJsonDataChart)">SMC Chart</button>
-    <button class="tab-links" onclick="openChart(event, 'kwh_unit_chart_div', kwhUnitJsonDataChart)">KWH Unit Chart
-    </button>
-    <button class="tab-links" onclick="openChart(event, 'smc_unit_chart_div', smcUnitJsonDataChart)">SMC Unit Chart
-    </button>
-    <button class="tab-links" onclick="openChart(event, 'kwh_month_chart_div', kwhMonthJsonDataChart)">KWH Month Chart
-    </button>
-    <button class="tab-links" onclick="openChart(event, 'smc_month_chart_div', smcMonthJsonDataChart)">SMC Month Chart
-    </button>
+<!-- Statistics Section (Collapsible) -->
+<div class="card mb-4">
+    <div class="card-header bg-white" style="cursor: pointer;" data-bs-toggle="collapse"
+        data-bs-target="#statsCollapse">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="bi bi-bar-chart-line"></i> Yearly Statistics
+                </h5>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-sm btn-outline-secondary" type="button">
+                    <i class="bi bi-chevron-down" id="statsToggleIcon"></i>
+                    <span id="statsToggleText">Show</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="collapse" id="statsCollapse">
+        <div class="card-body">
+            <!-- Year Selector -->
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label mb-0">
+                                <i class="bi bi-calendar-range"></i> Select Year
+                            </label>
+                        </div>
+                        <div class="col-md-8">
+                            <select class="form-select" id="yearSelector">
+                                <option value="all">Compare All Years</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row" id="yearlyStatsContainer">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="tab-content" id="kwh_chart_div"></div>
-<div class="tab-content" id="smc_chart_div"></div>
-<div class="tab-content" id="kwh_unit_chart_div"></div>
-<div class="tab-content" id="smc_unit_chart_div"></div>
-<div class="tab-content" id="kwh_month_chart_div"></div>
-<div class="tab-content" id="smc_month_chart_div"></div>
+<!-- Chart Type Selection -->
+<div class="chart-controls">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h5 class="mb-3 mb-md-0">
+                <i class="bi bi-graph-up"></i> Chart Type
+            </h5>
+        </div>
+        <div class="col-md-6">
+            <div class="btn-group w-100" role="group">
+                <input class="btn-check" id="bar" name="chartType" type="radio" value="bar" checked>
+                <label class="chart-type-btn" for="bar">
+                    <i class="bi bi-bar-chart-fill"></i> Bar
+                </label>
 
+                <input class="btn-check" id="line" name="chartType" type="radio" value="line">
+                <label class="chart-type-btn" for="line">
+                    <i class="bi bi-graph-up"></i> Line
+                </label>
+
+                <input class="btn-check" id="curve-line" name="chartType" type="radio" value="curve-line">
+                <label class="chart-type-btn" for="curve-line">
+                    <i class="bi bi-bezier2"></i> Curve
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Consumption Charts -->
+<h4 class="mb-3"><i class="bi bi-activity"></i> Consumption Overview</h4>
+<div class="main-charts">
+    <div class="chart-card">
+        <h5><i class="bi bi-lightning-charge text-primary"></i> Electricity Consumption (kWh)</h5>
+        <div id="kwh_chart_div" style="height: 400px;"></div>
+    </div>
+    <div class="chart-card">
+        <h5><i class="bi bi-fire text-danger"></i> Gas Consumption (Smc)</h5>
+        <div id="smc_chart_div" style="height: 400px;"></div>
+    </div>
+</div>
+
+<!-- Additional Charts (Collapsible) -->
+<div class="card mb-4">
+    <div class="card-header bg-white" style="cursor: pointer;" data-bs-toggle="collapse"
+        data-bs-target="#detailedChartsCollapse">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up-arrow"></i> Detailed Analysis
+                </h5>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-sm btn-outline-secondary" type="button">
+                    <i class="bi bi-chevron-down" id="detailedToggleIcon"></i>
+                    <span id="detailedToggleText">Show</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="collapse" id="detailedChartsCollapse">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="chart-card">
+                        <h6><i class="bi bi-currency-euro"></i> kWh Unit Cost (€/kWh)</h6>
+                        <div id="kwh_unit_chart_div" style="height: 300px;"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="chart-card">
+                        <h6><i class="bi bi-currency-euro"></i> Smc Unit Cost (€/Smc)</h6>
+                        <div id="smc_unit_chart_div" style="height: 300px;"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="chart-card">
+                        <h6><i class="bi bi-receipt"></i> kWh Monthly Bill (€)</h6>
+                        <div id="kwh_month_chart_div" style="height: 300px;"></div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="chart-card">
+                        <h6><i class="bi bi-receipt"></i> Smc Monthly Bill (€)</h6>
+                        <div id="smc_month_chart_div" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-plus-circle-fill text-primary" style="font-size: 2rem;"></i>
+                <h6 class="mt-2">Add Consumption</h6>
+                <a href="/consumption/create" class="btn btn-sm btn-primary">Add Record</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-table text-info" style="font-size: 2rem;"></i>
+                <h6 class="mt-2">View All Data</h6>
+                <a href="/consumption/list" class="btn btn-sm btn-info">View List</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-download text-success" style="font-size: 2rem;"></i>
+                <h6 class="mt-2">Export Data</h6>
+                <a href="/consumption/export" class="btn btn-sm btn-success">Download</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Calculate yearly statistics (stesso codice di prima)
+    function calculateYearlyStats() {
+        const yearlyData = {};
+
+        if (kwhJsonDataChart && kwhJsonDataChart.header) {
+            const years = kwhJsonDataChart.header.slice(1);
+
+            years.forEach(year => {
+                yearlyData[year] = {
+                    kwh: 0,
+                    smc: 0,
+                    kwhCost: 0,
+                    smcCost: 0,
+                    months: 0
+                };
+            });
+
+            if (kwhJsonDataChart.body) {
+                kwhJsonDataChart.body.forEach(row => {
+                    row.slice(1).forEach((val, idx) => {
+                        if (val !== null && val !== undefined) {
+                            yearlyData[years[idx]].kwh += val;
+                            yearlyData[years[idx]].months = Math.max(yearlyData[years[idx]].months, 1);
+                        }
+                    });
+                });
+            }
+
+            if (smcJsonDataChart && smcJsonDataChart.body) {
+                smcJsonDataChart.body.forEach(row => {
+                    row.slice(1).forEach((val, idx) => {
+                        if (val !== null && val !== undefined) {
+                            yearlyData[years[idx]].smc += val;
+                        }
+                    });
+                });
+            }
+
+            if (kwhMonthJsonDataChart && kwhMonthJsonDataChart.body) {
+                kwhMonthJsonDataChart.body.forEach(row => {
+                    row.slice(1).forEach((val, idx) => {
+                        if (val !== null && val !== undefined) {
+                            yearlyData[years[idx]].kwhCost += val;
+                        }
+                    });
+                });
+            }
+
+            if (smcMonthJsonDataChart && smcMonthJsonDataChart.body) {
+                smcMonthJsonDataChart.body.forEach(row => {
+                    row.slice(1).forEach((val, idx) => {
+                        if (val !== null && val !== undefined) {
+                            yearlyData[years[idx]].smcCost += val;
+                        }
+                    });
+                });
+            }
+        }
+
+        return yearlyData;
+    }
+
+    function displayYearlyStats(year) {
+        const yearlyData = calculateYearlyStats();
+        const container = $('#yearlyStatsContainer');
+        container.empty();
+
+        if (year === 'all') {
+            const years = Object.keys(yearlyData).sort().reverse();
+            years.forEach(y => {
+                const data = yearlyData[y];
+                const totalYearCost = data.kwhCost + data.smcCost;
+                const avgKwhMonth = data.months > 0 ? data.kwh / 12 : 0;
+                const avgSmcMonth = data.months > 0 ? data.smc / 12 : 0;
+
+                container.append(`
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                <h5 class="mb-0"><i class="bi bi-calendar"></i> Year ${y}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-lightning-charge text-primary"></i> Electricity</span>
+                                        <strong>${data.kwh.toLocaleString('it-IT', { maximumFractionDigits: 0 })} kWh</strong>
+                                    </div>
+                                    <small class="text-muted">Average: ${avgKwhMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} kWh/month</small>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-fire text-danger"></i> Gas</span>
+                                        <strong>${data.smc.toLocaleString('it-IT', { maximumFractionDigits: 0 })} Smc</strong>
+                                    </div>
+                                    <small class="text-muted">Average: ${avgSmcMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} Smc/month</small>
+                                </div>
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span><i class="bi bi-currency-euro text-success"></i> Total Cost</span>
+                                        <strong>€ ${totalYearCost.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong>
+                                    </div>
+                                    <small class="text-muted">kWh: €${data.kwhCost.toLocaleString('it-IT', { maximumFractionDigits: 0 })} | Gas: €${data.smcCost.toLocaleString('it-IT', { maximumFractionDigits: 0 })}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        } else {
+            const data = yearlyData[year];
+            if (data) {
+                const totalYearCost = data.kwhCost + data.smcCost;
+                const avgKwhMonth = data.kwh / 12;
+                const avgSmcMonth = data.smc / 12;
+
+                container.append(`
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h4><i class="bi bi-calendar-check"></i> Year ${year} Summary</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-lightning-charge-fill text-primary" style="font-size: 3rem;"></i>
+                                <h3 class="mt-2">${data.kwh.toLocaleString('it-IT', { maximumFractionDigits: 0 })}</h3>
+                                <p class="text-muted mb-0">kWh Total</p>
+                                <small class="text-muted">Avg: ${avgKwhMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} kWh/month</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-fire text-danger" style="font-size: 3rem;"></i>
+                                <h3 class="mt-2">${data.smc.toLocaleString('it-IT', { maximumFractionDigits: 0 })}</h3>
+                                <p class="text-muted mb-0">Smc Total</p>
+                                <small class="text-muted">Avg: ${avgSmcMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} Smc/month</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="bi bi-currency-euro text-success" style="font-size: 3rem;"></i>
+                                <h3 class="mt-2">€ ${totalYearCost.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
+                                <p class="text-muted mb-0">Total Cost</p>
+                                <small class="text-muted">kWh: €${data.kwhCost.toLocaleString('it-IT')} | Gas: €${data.smcCost.toLocaleString('it-IT')}</small>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        // Draw main charts immediately
+        const options = {
+            curveType: 'function',
+            legend: { position: 'bottom' },
+            height: 400
+        };
+
+        drawChart(kwhJsonDataChart, 'kwh_chart_div', chartType, {
+            ...options,
+            title: 'Monthly Electricity Consumption',
+            vAxis: { title: 'kWh' }
+        });
+
+        drawChart(smcJsonDataChart, 'smc_chart_div', chartType, {
+            ...options,
+            title: 'Monthly Gas Consumption',
+            vAxis: { title: 'Smc' }
+        });
+
+        // Populate year selector
+        const yearlyData = calculateYearlyStats();
+        const years = Object.keys(yearlyData).sort().reverse();
+
+        years.forEach(year => {
+            $('#yearSelector').append(`<option value="${year}">${year}</option>`);
+        });
+
+        displayYearlyStats('all');
+
+        $('#yearSelector').change(function () {
+            displayYearlyStats($(this).val());
+        });
+
+        // Handle collapse toggles
+        $('#statsCollapse').on('show.bs.collapse', function () {
+            $('#statsToggleIcon').removeClass('bi-chevron-down').addClass('bi-chevron-up');
+            $('#statsToggleText').text('Hide');
+        }).on('hide.bs.collapse', function () {
+            $('#statsToggleIcon').removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            $('#statsToggleText').text('Show');
+        });
+
+        $('#detailedChartsCollapse').on('show.bs.collapse', function () {
+            $('#detailedToggleIcon').removeClass('bi-chevron-down').addClass('bi-chevron-up');
+            $('#detailedToggleText').text('Hide');
+
+            // Draw detailed charts when opened
+            const detailedOptions = { ...options, height: 300 };
+            drawChart(kwhUnitJsonDataChart, 'kwh_unit_chart_div', chartType, detailedOptions);
+            drawChart(smcUnitJsonDataChart, 'smc_unit_chart_div', chartType, detailedOptions);
+            drawChart(kwhMonthJsonDataChart, 'kwh_month_chart_div', chartType, detailedOptions);
+            drawChart(smcMonthJsonDataChart, 'smc_month_chart_div', chartType, detailedOptions);
+        }).on('hide.bs.collapse', function () {
+            $('#detailedToggleIcon').removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            $('#detailedToggleText').text('Show');
+        });
+
+        $('input[name="chartType"]').change(function () {
+            $('.chart-type-btn').removeClass('active');
+            $('label[for="' + $(this).attr('id') + '"]').addClass('active');
+        });
+    });
+</script>
 {% endblock %}

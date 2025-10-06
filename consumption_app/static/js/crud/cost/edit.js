@@ -7,8 +7,19 @@ $(document).ready(function(){
     fetch(`/cost/${costId}`)
     .then(response => response.json())
     .then(data => {
-        document.getElementById('start-input').value = data.start;
-        document.getElementById('end-input').value = data.end;
+        // Converti le date in formato YYYY-MM-DD per l'input date
+        if (data.start) {
+            // Rimuovi la parte con l'ora se presente
+            const startDate = data.start.split('T')[0];
+            document.getElementById('start-input').value = startDate;
+        }
+        
+        if (data.end) {
+            // Rimuovi la parte con l'ora se presente
+            const endDate = data.end.split('T')[0];
+            document.getElementById('end-input').value = endDate;
+        }
+        
         document.getElementById('kwh-input').value = data.kwh;
         document.getElementById('smc-input').value = data.smc;
         document.getElementById('kwh_cost-input').value = data.kwh_cost;
@@ -16,7 +27,7 @@ $(document).ready(function(){
     })
     .catch(error => {
         console.error(error);
-        toast(`Error`,`Error retrieving cost record`)
+        toast('Error', 'Error retrieving cost record', true, 5000);
     });
 
     updateForm.addEventListener('submit', (event) => {
@@ -29,6 +40,8 @@ $(document).ready(function(){
         const kwh_cost = formData.get('kwh_cost');
         const smc_cost = formData.get('smc_cost');
 
+        showLoading();
+
         fetch(`/cost/${costId}`, {
             method: 'PUT',
             body: JSON.stringify({start, end, kwh, smc, kwh_cost, smc_cost}),
@@ -36,16 +49,16 @@ $(document).ready(function(){
         })
         .then(response => response.json())
         .then(data => {
-            toast(`Success`,`Cost updated with ID ${data.id}`)
-            // Wait for 3 seconds (3000 milliseconds)
+            hideLoading();
+            toast('Success', `Cost updated with ID ${data.id}`, true, 3000);
             setTimeout(() => {
-              // Change page location to "https://www.example.com"
               window.location.href = "/cost/list";
             }, 3000);
         })
         .catch(error => {
+            hideLoading();
             console.error(error);
-            toast(`Error`,`Error updating cost`)
+            toast('Error', 'Error updating cost', true, 5000);
         });
     });
 });

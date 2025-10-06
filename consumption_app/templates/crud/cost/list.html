@@ -1,34 +1,326 @@
 {% extends 'base.html' %}
 
 {% block endbody %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/crud/utility.js') }}" type="text/javascript"></script>
 <script src="{{ url_for('static', filename='js/crud/cost/list.js') }}" type="text/javascript"></script>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="mb-0">
+                            <i class="bi bi-currency-euro"></i> Cost Records
+                        </h4>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-primary" onclick="addCost()" type="button">
+                            <i class="bi bi-plus-circle"></i> Add Record
+                        </button>
+                        <button class="btn btn-success" onclick="exportCost()" type="button">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Summary Stats -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Price Periods</small>
+                            <strong class="h5" id="recordCount">-</strong>
+                            <small class="text-muted">Total records</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Current kWh Price</small>
+                            <strong class="h5" id="currentKwhPrice">-</strong>
+                            <small class="text-muted">€/kWh</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Current Smc Price</small>
+                            <strong class="h5" id="currentSmcPrice">-</strong>
+                            <small class="text-muted">€/Smc</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Price Variations</small>
+                            <strong class="h5" id="priceVariations">-</strong>
+                            <small class="text-muted">Changes tracked</small>
+                        </div>
+                    </div>
+                </div>
 
-    <h1 class="mb-4">Cost Table</h1>
-    <button class="btn btn-primary" data-target="#addModal" data-toggle="modal" onclick="addCost()" type="button">Add
-        Record
-    </button>
-    <table class="table" id="costs-table">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>kWh</th>
-            <th>SMC</th>
-            <th>kWh Cost</th>
-            <th>SMC Cost</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-    </table>
+                <!-- Price Trend Charts -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-graph-up"></i> kWh Price Trend
+                                </h6>
+                                <canvas id="kwhPriceChart" style="height: 180px;"></canvas>
+                                <div class="mt-3">
+                                    <small class="text-muted">Highest: <strong id="maxKwhPrice">-</strong></small><br>
+                                    <small class="text-muted">Lowest: <strong id="minKwhPrice">-</strong></small><br>
+                                    <small class="text-muted">Average: <strong id="avgKwhPrice">-</strong></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-graph-up"></i> Smc Price Trend
+                                </h6>
+                                <canvas id="smcPriceChart" style="height: 180px;"></canvas>
+                                <div class="mt-3">
+                                    <small class="text-muted">Highest: <strong id="maxSmcPrice">-</strong></small><br>
+                                    <small class="text-muted">Lowest: <strong id="minSmcPrice">-</strong></small><br>
+                                    <small class="text-muted">Average: <strong id="avgSmcPrice">-</strong></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>
+                                    <i class="bi bi-calendar-check"></i> Start
+                                </th>
+                                <th>
+                                    <i class="bi bi-calendar-x"></i> End
+                                </th>
+                                <th class="text-end">
+                                    <i class="bi bi-receipt"></i> kWh Bill
+                                </th>
+                                <th class="text-end">
+                                    <i class="bi bi-receipt"></i> Smc Bill
+                                </th>
+                                <th class="text-end">
+                                    <i class="bi bi-currency-euro"></i> kWh Unit
+                                </th>
+                                <th class="text-end">
+                                    <i class="bi bi-currency-euro"></i> Smc Unit
+                                </th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination info (senza navigation) -->
+                <div class="mt-3">
+                    <small class="text-muted" id="recordInfo">Showing 0 of 0 records</small>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-<div id="pagination-container"></div>
-<button class="btn btn-success" onclick="exportCost()" type="button">Export Xls</button>
+
+<script>
+    let allData = [];
+    let kwhPriceChart = null;
+    let smcPriceChart = null;
+
+    function createPriceChart(canvasId, data, label, color) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+
+        const sortedData = [...data].sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        const labels = sortedData.map(item => {
+            const date = new Date(item.start);
+            return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+        });
+
+        const values = sortedData.map(item =>
+            label === 'kWh' ? parseFloat(item.kwh_cost) : parseFloat(item.smc_cost)
+        );
+
+        if (canvasId === 'kwhPriceChart' && kwhPriceChart) {
+            kwhPriceChart.destroy();
+        } else if (canvasId === 'smcPriceChart' && smcPriceChart) {
+            smcPriceChart.destroy();
+        }
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${label} Price (€)`,
+                    data: values,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 3.5, // Aumentato da 2.5 a 3.5 per grafico più piccolo
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                // Usa formato corretto con virgola per decimali
+                                return `Price: €${context.parsed.y.toFixed(3).replace('.', ',')}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function (value) {
+                                // Formatta con virgola per i decimali, senza separatore migliaia
+                                return '€' + value.toFixed(3).replace('.', ',');
+                            }
+                        },
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        if (canvasId === 'kwhPriceChart') {
+            kwhPriceChart = chart;
+        } else {
+            smcPriceChart = chart;
+        }
+
+        return chart;
+    }
+
+    function updateStats(data) {
+        $('#recordCount').text(data.length);
+        $('#priceVariations').text(data.length > 0 ? data.length - 1 : 0);
+
+        if (data.length === 0) {
+            $('#currentKwhPrice').text('-');
+            $('#currentSmcPrice').text('-');
+            return;
+        }
+
+        const currentRecord = data.find(item => !item.end) || data[0];
+
+        $('#currentKwhPrice').text('€ ' + parseFloat(currentRecord.kwh_cost).toLocaleString('it-IT', {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
+        }));
+
+        $('#currentSmcPrice').text('€ ' + parseFloat(currentRecord.smc_cost).toLocaleString('it-IT', {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3
+        }));
+
+        let kwhPrices = data.map(item => parseFloat(item.kwh_cost));
+        let smcPrices = data.map(item => parseFloat(item.smc_cost));
+
+        const maxKwh = Math.max(...kwhPrices);
+        const minKwh = Math.min(...kwhPrices);
+        const avgKwh = kwhPrices.reduce((a, b) => a + b, 0) / kwhPrices.length;
+
+        const maxSmc = Math.max(...smcPrices);
+        const minSmc = Math.min(...smcPrices);
+        const avgSmc = smcPrices.reduce((a, b) => a + b, 0) / smcPrices.length;
+
+        $('#maxKwhPrice').text('€ ' + maxKwh.toLocaleString('it-IT', { minimumFractionDigits: 3 }));
+        $('#minKwhPrice').text('€ ' + minKwh.toLocaleString('it-IT', { minimumFractionDigits: 3 }));
+        $('#avgKwhPrice').text('€ ' + avgKwh.toLocaleString('it-IT', { minimumFractionDigits: 3 }));
+
+        $('#maxSmcPrice').text('€ ' + maxSmc.toLocaleString('it-IT', { minimumFractionDigits: 3 }));
+        $('#minSmcPrice').text('€ ' + minSmc.toLocaleString('it-IT', { minimumFractionDigits: 3 }));
+        $('#avgSmcPrice').text('€ ' + avgSmc.toLocaleString('it-IT', { minimumFractionDigits: 3 }));
+
+        createPriceChart('kwhPriceChart', data, 'kWh', '#667eea');
+        createPriceChart('smcPriceChart', data, 'Smc', '#f5576c');
+    }
+
+    function renderAllData(data) {
+        const tableBody = $('#table-body');
+        tableBody.empty();
+
+        if (data.length === 0) {
+            tableBody.append(`
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="mt-2 text-muted">No records found</p>
+                    </td>
+                </tr>
+            `);
+            $('#recordInfo').text('Showing 0 records');
+            return;
+        }
+
+        data.forEach(item => {
+            tableBody.append(renderData(item));
+        });
+
+        $('#recordInfo').text(`Showing ${data.length} records`);
+        $('[data-bs-toggle="tooltip"]').tooltip();
+    }
+
+    $(document).ready(function () {
+        showLoading();
+        fetch('/cost?page=1&page_size=10000')
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                allData = data;
+                renderAllData(data);
+                updateStats(data);
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error loading data:', error);
+                toast('Error', 'Failed to load data', true);
+            });
+    });
+</script>
 {% endblock %}

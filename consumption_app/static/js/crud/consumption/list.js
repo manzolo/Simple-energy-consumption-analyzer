@@ -1,95 +1,111 @@
 function renderData(consumption) {
-  return `<tr data-id="${consumption.id}">
-            <td contenteditable="false">${consumption.id}</td>
-            <td contenteditable="false">${consumption.year}</td>
-            <td contenteditable="false">${consumption.month}</td>
-            <td contenteditable="false">${consumption.kwh}</td>
-            <td contenteditable="false">${consumption.smc}</td>
-            <td>
-              <button class="btn btn-sm btn-warning" onclick="editConsumption(${consumption.id})">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteConsumption(${consumption.id})">Delete</button>
+  const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  return `<tr data-id="${consumption.id}" class="consumption-row">
+            <td><span class="badge bg-secondary">${consumption.id}</span></td>
+            <td contenteditable="false">
+              <strong>${consumption.year}</strong>
+            </td>
+            <td contenteditable="false">
+              <span class="badge bg-info">${monthNames[consumption.month]}</span>
+              <small class="text-muted">(${consumption.month})</small>
+            </td>
+            <td contenteditable="false" class="text-end">
+              <strong>${parseFloat(consumption.kwh).toLocaleString('it-IT', {maximumFractionDigits: 0})}</strong>
+              <small class="text-muted">kWh</small>
+            </td>
+            <td contenteditable="false" class="text-end">
+              <strong>${parseFloat(consumption.smc).toLocaleString('it-IT', {maximumFractionDigits: 0})}</strong>
+              <small class="text-muted">Smc</small>
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-warning" onclick="editConsumption(${consumption.id})" 
+                        data-bs-toggle="tooltip" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteConsumption(${consumption.id})"
+                        data-bs-toggle="tooltip" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>`;
 }
 
 function editConsumption(id) {
-  const row = document.querySelector(`tr[data-id="${id}"]`);
-  const editBtn = row.querySelector('.btn-warning');
-
-  // Change Edit button to Save button
-  editBtn.textContent = 'Save';
-  editBtn.classList.remove('btn-warning');
-  editBtn.classList.add('btn-success');
-  editBtn.onclick = saveConsumption;
-
-  // Make cells editable
-  const cells = row.querySelectorAll(`td[contenteditable]`);
-  cells.forEach(cell => {
-    cell.contentEditable = true;
-  });
-}
-
-async function saveConsumption() {
-  const row = this.parentNode.parentNode;
-  const id = row.getAttribute('data-id');
-
-  // Disable editing and change Save button back to Edit button
-  const cells = row.querySelectorAll('td[contenteditable]');
-  cells.forEach(cell => cell.contentEditable = false);
-
-  const saveBtn = row.querySelector('.btn-success');
-  saveBtn.textContent = 'Edit';
-  saveBtn.classList.remove('btn-success');
-  saveBtn.classList.add('btn-warning');
-  saveBtn.onclick = () => editConsumption(id);
-
-  // Retrieve updated values from the cells
-  const year = row.children[1].textContent;
-  const month = row.children[2].textContent;
-  const kwh = parseFloat(row.children[3].textContent);
-  const smc = parseFloat(row.children[4].textContent);
-
-  // Send updated values to the server
-  const response = await fetch(`/consumption/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ year, month, kwh, smc })
-  });
-
-  if (response.ok) {
-    // Reload the data to update the table
-    fetchData('consumption', urlParams.get('page'), urlParams.get('page_size'));
-  } else {
-    // Display an error message
-    alert('Failed to update consumption');
-  }
+  window.location.href = `/consumption/edit/${id}`;
 }
 
 function addConsumption() {
-location.href='/consumption/create'
+  window.location.href = '/consumption/create';
 }
 
 function exportConsumption() {
-location.href='/consumption/export'
+  showLoading();
+  window.location.href = '/consumption/export';
+  setTimeout(hideLoading, 2000);
 }
 
 function deleteConsumption(id) {
-  const confirmed = confirm("Are you sure you want to delete this record?");
-  if (!confirmed) {
+  if (!confirm("⚠️ Are you sure you want to delete this record?\n\nThis action cannot be undone.")) {
     return;
   }
+  
+  showLoading();
+  
   fetch(`/consumption/${id}`, {
     method: 'DELETE',
   })
     .then(response => response.json())
     .then(data => {
-      //console.log(data);
-      // refresh the table after deletion
-      location.reload();
+      hideLoading();
+      toast('Success', `Record #${id} deleted successfully`, true);
+      setTimeout(() => location.reload(), 1500);
     })
-    .catch(error => console.error(error));
+    .catch(error => {
+      hideLoading();
+      console.error(error);
+      toast('Error', 'Failed to delete record', true);
+    });
 }
+
+// Override fetchData to include stats update
+fetchData = function(endpoint, page = 1, pageSize = 10) {
+  page = page ?? 1;
+  pageSize = pageSize ?? 10;
+  
+  showLoading();
+  
+  // Fetch ALL data for statistics (not paginated)
+  fetch(`/${endpoint}?page=1&page_size=10000`)
+    .then(response => response.json())
+    .then(allData => {
+      if (allData && allData.length > 0) {
+        updateStats(allData);
+      }
+    })
+    .catch(error => console.error('Error loading stats:', error));
+  
+  // Fetch paginated data for table
+  getData(endpoint, renderData, page, pageSize).then(([result, status, headers]) => {
+    hideLoading();
+    
+    // Update record info
+    const totalCount = parseInt(headers['X-Total-Count']);
+    const currentPage = parseInt(headers['X-Current-Page']);
+    const pageSizeNum = parseInt(headers['X-Page-Size']);
+    const start = (currentPage - 1) * pageSizeNum + 1;
+    const end = Math.min(currentPage * pageSizeNum, totalCount);
+    
+    $('#recordInfo').text(`Showing ${start}-${end} of ${totalCount} records`);
+    
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+  }).catch(error => {
+    hideLoading();
+    toast('Error', 'Failed to load data', true);
+  });
+};
 
 fetchData('consumption', urlParams.get('page'), urlParams.get('page_size'));

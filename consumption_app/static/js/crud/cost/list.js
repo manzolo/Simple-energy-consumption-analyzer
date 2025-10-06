@@ -1,99 +1,80 @@
 function renderData(cost) {
-  return `<tr data-id="${cost.id}">
-            <td>${cost.id}</td>
-            <td contenteditable="false">${new Date(cost.start).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'})}</td>
-            <td contenteditable="false">${cost.end ? new Date(cost.end).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}) : ''}</td>
-            <td contenteditable="false">${cost.kwh}</td>
-            <td contenteditable="false">${cost.smc}</td>
-            <td contenteditable="false">${cost.kwh_cost}</td>
-            <td contenteditable="false">${cost.smc_cost}</td>
-            <td>
-              <button class="btn btn-sm btn-warning" onclick="editCost(${cost.id})">Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteCost(${cost.id})">Delete</button>
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '<span class="badge bg-secondary">Ongoing</span>';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'});
+  };
+  
+  return `<tr data-id="${cost.id}" class="cost-row">
+            <td><span class="badge bg-secondary">${cost.id}</span></td>
+            <td contenteditable="false">
+              <i class="bi bi-calendar-check"></i> ${formatDate(cost.start)}
+            </td>
+            <td contenteditable="false">
+              ${cost.end ? '<i class="bi bi-calendar-x"></i> ' + formatDate(cost.end) : '<span class="badge bg-info">Current</span>'}
+            </td>
+            <td contenteditable="false" class="text-end">
+              <strong>€ ${parseFloat(cost.kwh).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+            </td>
+            <td contenteditable="false" class="text-end">
+              <strong>€ ${parseFloat(cost.smc).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+            </td>
+            <td contenteditable="false" class="text-end">
+              <strong>€ ${parseFloat(cost.kwh_cost).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})}</strong>
+              <small class="text-muted">/kWh</small>
+            </td>
+            <td contenteditable="false" class="text-end">
+              <strong>€ ${parseFloat(cost.smc_cost).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})}</strong>
+              <small class="text-muted">/Smc</small>
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <button class="btn btn-outline-warning" onclick="editCost(${cost.id})" 
+                        data-bs-toggle="tooltip" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-outline-danger" onclick="deleteCost(${cost.id})"
+                        data-bs-toggle="tooltip" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>`;
 }
 
 function editCost(id) {
-  const row = document.querySelector(`tr[data-id="${id}"]`);
-  const editBtn = row.querySelector('.btn-warning');
-
-  // Change Edit button to Save button
-  editBtn.textContent = 'Save';
-  editBtn.classList.remove('btn-warning');
-  editBtn.classList.add('btn-success');
-  editBtn.onclick = saveCost;
-
-  // Make cells editable
-  const cells = row.querySelectorAll(`td[contenteditable]`);
-  cells.forEach(cell => {
-    cell.contentEditable = true;
-  });
-}
-
-async function saveCost() {
-  const row = this.parentNode.parentNode;
-  const id = row.getAttribute('data-id');
-
-  // Disable editing and change Save button back to Edit button
-  const cells = row.querySelectorAll('td[contenteditable]');
-  cells.forEach(cell => cell.contentEditable = false);
-
-  const saveBtn = row.querySelector('.btn-success');
-  saveBtn.textContent = 'Edit';
-  saveBtn.classList.remove('btn-success');
-  saveBtn.classList.add('btn-warning');
-  saveBtn.onclick = () => editCost(id);
-
-  // Retrieve updated values from the cells
-  const start = new Date(row.children[1].textContent.split('/').reverse().join('/'));
-  const end = row.children[2].textContent ? new Date(row.children[2].textContent.split('/').reverse().join('/')) : null;
-  const kwh = parseFloat(row.children[3].textContent);
-  const smc = parseFloat(row.children[4].textContent);
-  const kwh_cost = parseFloat(row.children[5].textContent);
-  const smc_cost = parseFloat(row.children[6].textContent);
-
-  // Send updated values to the server
-  const response = await fetch(`/cost/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ start, end, kwh, smc, kwh_cost, smc_cost })
-  });
-
-  if (response.ok) {
-    // Reload the data to update the table
-    fetchData('cost', urlParams.get('page'), urlParams.get('page_size'));
-  } else {
-    // Display an error message
-    alert('Failed to update cost');
-  }
-}
-
-function exportCost() {
-location.href='/cost/export'
+  window.location.href = `/cost/edit/${id}`;
 }
 
 function addCost() {
-location.href='/cost/create'
+  window.location.href = '/cost/create';
+}
+
+function exportCost() {
+  showLoading();
+  window.location.href = '/cost/export';
+  setTimeout(hideLoading, 2000);
 }
 
 function deleteCost(id) {
-  const confirmed = confirm("Are you sure you want to delete this record?");
-  if (!confirmed) {
+  if (!confirm("⚠️ Are you sure you want to delete this record?\n\nThis action cannot be undone.")) {
     return;
   }
+  
+  showLoading();
+  
   fetch(`/cost/${id}`, {
     method: 'DELETE',
   })
     .then(response => response.json())
     .then(data => {
-      // refresh the table after deletion
-      fetchData('cost', urlParams.get('page'), urlParams.get('page_size'));
-      //location.reload();
+      hideLoading();
+      toast('Success', `Record #${id} deleted successfully`, true);
+      setTimeout(() => location.reload(), 1500);
     })
-    .catch(error => console.error(error));
+    .catch(error => {
+      hideLoading();
+      console.error(error);
+      toast('Error', 'Failed to delete record', true);
+    });
 }
-
-fetchData('cost', urlParams.get('page'), urlParams.get('page_size'));

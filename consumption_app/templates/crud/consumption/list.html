@@ -6,26 +6,249 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Consumption Table</h1>
-    <button class="btn btn-primary" data-target="#addModal" data-toggle="modal" onclick="addConsumption()"
-            type="button">Add Record
-    </button>
-    <table class="table">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Year</th>
-            <th>Month</th>
-            <th>kWh</th>
-            <th>SMC</th>
-            <th>Action</th>
-        </tr>
-        </thead>
-        <tbody id="table-body">
-        </tbody>
-    </table>
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4 class="mb-0">
+                            <i class="bi bi-table"></i> Consumption Records
+                        </h4>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button class="btn btn-primary" onclick="addConsumption()" type="button">
+                            <i class="bi bi-plus-circle"></i> Add Record
+                        </button>
+                        <button class="btn btn-success" onclick="exportConsumption()" type="button">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Search and Filter -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="yearFilter">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="monthFilter">
+                            <option value="">All Months</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Total kWh</small>
+                            <strong class="h5" id="totalKwh">-</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Total Smc</small>
+                            <strong class="h5" id="totalSmc">-</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Avg kWh/Month</small>
+                            <strong class="h5" id="avgKwh">-</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light p-3 rounded">
+                            <small class="text-muted d-block">Records</small>
+                            <strong class="h5" id="recordCount">-</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>
+                                    <i class="bi bi-calendar3"></i> Year
+                                </th>
+                                <th>
+                                    <i class="bi bi-calendar-month"></i> Month
+                                </th>
+                                <th class="text-end">
+                                    <i class="bi bi-lightning-charge"></i> kWh
+                                </th>
+                                <th class="text-end">
+                                    <i class="bi bi-fire"></i> Smc
+                                </th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <small class="text-muted" id="recordInfo">Showing 0 of 0 records</small>
+                    </div>
+                    <nav id="pagination-container"></nav>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-<div id="pagination-container"></div>
-<button class="btn btn-success" onclick="exportConsumption()" type="button">Export Xls</button>
+
+<script>
+    let allData = []; // Store all data for filtering
+    
+    // Update statistics
+    function updateStats(data) {
+        let totalKwh = 0, totalSmc = 0;
+        data.forEach(item => {
+            totalKwh += parseFloat(item.kwh) || 0;
+            totalSmc += parseFloat(item.smc) || 0;
+        });
+        
+        $('#totalKwh').text(totalKwh.toLocaleString('it-IT', {maximumFractionDigits: 0}));
+        $('#totalSmc').text(totalSmc.toLocaleString('it-IT', {maximumFractionDigits: 0}));
+        $('#avgKwh').text((data.length > 0 ? totalKwh / data.length : 0).toLocaleString('it-IT', {maximumFractionDigits: 0}));
+        $('#recordCount').text(data.length);
+    }
+    
+    // Apply filters to data
+    function applyFilters() {
+        const searchTerm = $('#searchInput').val().toLowerCase();
+        const yearFilter = $('#yearFilter').val();
+        const monthFilter = $('#monthFilter').val();
+        
+        let filteredData = allData.filter(item => {
+            // Search filter
+            const matchesSearch = !searchTerm || 
+                item.id.toString().includes(searchTerm) ||
+                item.year.toString().includes(searchTerm) ||
+                item.month.toString().includes(searchTerm) ||
+                item.kwh.toString().includes(searchTerm) ||
+                item.smc.toString().includes(searchTerm);
+            
+            // Year filter
+            const matchesYear = !yearFilter || item.year.toString() === yearFilter;
+            
+            // Month filter
+            const matchesMonth = !monthFilter || item.month.toString() === monthFilter;
+            
+            return matchesSearch && matchesYear && matchesMonth;
+        });
+        
+        // Update table with filtered data
+        renderFilteredData(filteredData);
+        
+        // Update statistics
+        updateStats(filteredData);
+    }
+    
+    function renderFilteredData(data) {
+        const tableBody = $('#table-body');
+        tableBody.empty();
+        
+        if (data.length === 0) {
+            tableBody.append(`
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="mt-2 text-muted">No records found</p>
+                    </td>
+                </tr>
+            `);
+            $('#recordInfo').text('Showing 0 of 0 records');
+            return;
+        }
+        
+        data.forEach(item => {
+            tableBody.append(renderData(item));
+        });
+        
+        $('#recordInfo').text(`Showing ${data.length} of ${allData.length} records`);
+        
+        // Initialize tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+    }
+    
+    // Clear filters
+    function clearFilters() {
+        $('#searchInput').val('');
+        $('#yearFilter').val('');
+        $('#monthFilter').val('');
+        applyFilters();
+    }
+    
+    // Populate year filter and load data
+    $(document).ready(function() {
+        const currentYear = new Date().getFullYear();
+        for (let i = currentYear; i >= currentYear - 10; i--) {
+            $('#yearFilter').append(`<option value="${i}">${i}</option>`);
+        }
+        
+        // Attach filter events
+        $('#searchInput').on('input', applyFilters);
+        $('#yearFilter').change(applyFilters);
+        $('#monthFilter').change(applyFilters);
+        
+        // Load all data
+        showLoading();
+        fetch('/consumption?page=1&page_size=10000')
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                allData = data;
+                applyFilters(); // Initial render
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error loading data:', error);
+                toast('Error', 'Failed to load data', true);
+            });
+    });
+</script>
 {% endblock %}

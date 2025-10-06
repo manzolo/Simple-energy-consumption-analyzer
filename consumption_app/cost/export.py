@@ -31,32 +31,46 @@ def export_all_costs():
         worksheet = workbook.add_worksheet()
 
         # Add column headers to the worksheet
-        headers = ['ID', 'Start', 'End', 'KWH', 'SMC', 'KWH Cost', 'SMC Cost']
+        headers = ['ID', 'Start', 'End', 'KWH Bill (€)', 'SMC Bill (€)', 'KWH Cost (€/kWh)', 'SMC Cost (€/Smc)']
         for i, header in enumerate(headers):
             worksheet.write(0, i, header)
+
+        # Create date format
+        date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
 
         # Write the cost data to the worksheet
         for row_num, row in enumerate(rows):
             for col_num, value in enumerate(row):
-                # Format the date column if it exists
+                # Format the date columns (1=start, 2=end)
                 if 1 <= col_num <= 2 and value is not None:
-                    value = datetime.strptime(value, "%Y-%m-%d")
-                    date_format = workbook.add_format({'num_format': 'dd/mm/yyyy'})
-                    worksheet.set_column(col_num, col_num, None, date_format)
-                    worksheet.write(row_num + 1, col_num, value, date_format)
+                    try:
+                        # Try parsing with time component first (ISO format)
+                        if 'T' in value:
+                            date_obj = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                            # Remove timezone info for Excel compatibility
+                            date_obj = date_obj.replace(tzinfo=None)
+                        else:
+                            # Fallback to simple date format
+                            date_obj = datetime.strptime(value, "%Y-%m-%d")
+                        
+                        worksheet.write(row_num + 1, col_num, date_obj, date_format)
+                    except (ValueError, AttributeError) as e:
+                        # If parsing fails, write as string
+                        worksheet.write(row_num + 1, col_num, str(value))
                 else:
                     worksheet.write(row_num + 1, col_num, value)
+        
         # Close the workbook and write the output to a BytesIO object
         workbook.close()
         output.seek(0)
 
-        # Set the response headers to indicate that this is an XLS file
+        # Set the response headers to indicate that this is an XLSX file
         response_headers = {
-            'Content-Disposition': 'attachment; filename="costs.xls"',
-            'Content-Type': 'application/vnd.ms-excel'
+            'Content-Disposition': 'attachment; filename="costs.xlsx"',
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         }
 
-        # Return the XLS file as a response
+        # Return the XLSX file as a response
         return Response(output.read(), headers=response_headers)
 
     else:
