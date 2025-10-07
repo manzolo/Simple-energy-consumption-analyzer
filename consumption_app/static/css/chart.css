@@ -32,3 +32,13 @@
   height: 450px;
 }
 
+#kwh_chart_div,
+#smc_chart_div {
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+}
+
+#kwh_chart_div.loaded,
+#smc_chart_div.loaded {
+  opacity: 1;
+}
