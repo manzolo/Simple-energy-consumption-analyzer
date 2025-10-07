@@ -328,16 +328,16 @@
                     smc: 0,
                     kwhCost: 0,
                     smcCost: 0,
-                    months: 0
+                    months: 0  // Conta i mesi con dati
                 };
             });
 
             if (kwhJsonDataChart.body) {
                 kwhJsonDataChart.body.forEach(row => {
                     row.slice(1).forEach((val, idx) => {
-                        if (val !== null && val !== undefined) {
+                        if (val !== null && val !== undefined && val > 0) {
                             yearlyData[years[idx]].kwh += val;
-                            yearlyData[years[idx]].months = Math.max(yearlyData[years[idx]].months, 1);
+                            yearlyData[years[idx]].months += 1;  // Incrementa il contatore mesi
                         }
                     });
                 });
@@ -346,7 +346,7 @@
             if (smcJsonDataChart && smcJsonDataChart.body) {
                 smcJsonDataChart.body.forEach(row => {
                     row.slice(1).forEach((val, idx) => {
-                        if (val !== null && val !== undefined) {
+                        if (val !== null && val !== undefined && val > 0) {
                             yearlyData[years[idx]].smc += val;
                         }
                     });
@@ -387,8 +387,11 @@
             years.forEach(y => {
                 const data = yearlyData[y];
                 const totalYearCost = data.kwhCost + data.smcCost;
-                const avgKwhMonth = data.months > 0 ? data.kwh / 12 : 0;
-                const avgSmcMonth = data.months > 0 ? data.smc / 12 : 0;
+                const actualMonths = data.months || 1;
+                const avgKwhMonth = data.kwh / actualMonths;
+                const avgSmcMonth = data.smc / actualMonths;
+                // Mostra i mesi solo se diversi da 12
+                const monthsText = actualMonths === 12 ? '' : ` (${actualMonths} months)`;
 
                 container.append(`
                     <div class="col-md-6 col-lg-4 mb-3">
@@ -402,21 +405,24 @@
                                         <span><i class="bi bi-lightning-charge text-primary"></i> Electricity</span>
                                         <strong>${data.kwh.toLocaleString('it-IT', { maximumFractionDigits: 0 })} kWh</strong>
                                     </div>
-                                    <small class="text-muted">Average: ${avgKwhMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} kWh/month</small>
+                                    <small class="text-muted">Average: ${avgKwhMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} kWh/month${monthsText}</small>
                                 </div>
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span><i class="bi bi-fire text-danger"></i> Gas</span>
                                         <strong>${data.smc.toLocaleString('it-IT', { maximumFractionDigits: 0 })} Smc</strong>
                                     </div>
-                                    <small class="text-muted">Average: ${avgSmcMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} Smc/month</small>
+                                    <small class="text-muted">Average: ${avgSmcMonth.toLocaleString('it-IT', { maximumFractionDigits: 0 })} Smc/month${monthsText}</small>
                                 </div>
                                 <div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span><i class="bi bi-currency-euro text-success"></i> Total Cost</span>
                                         <strong>€ ${totalYearCost.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</strong>
                                     </div>
-                                    <small class="text-muted">kWh: €${data.kwhCost.toLocaleString('it-IT', { maximumFractionDigits: 0 })} | Gas: €${data.smcCost.toLocaleString('it-IT', { maximumFractionDigits: 0 })}</small>
+                                    ${totalYearCost > 0 
+                                        ? `<small class="text-muted">kWh: €${data.kwhCost.toLocaleString('it-IT', { maximumFractionDigits: 0 })} | Gas: €${data.smcCost.toLocaleString('it-IT', { maximumFractionDigits: 0 })}</small>`
+                                        : `<small class="text-muted text-warning"><i class="bi bi-exclamation-triangle"></i> No cost data available</small>`
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -427,13 +433,15 @@
             const data = yearlyData[year];
             if (data) {
                 const totalYearCost = data.kwhCost + data.smcCost;
-                const avgKwhMonth = data.kwh / 12;
-                const avgSmcMonth = data.smc / 12;
+                const actualMonths = data.months || 1;
+                const avgKwhMonth = data.kwh / actualMonths;
+                const avgSmcMonth = data.smc / actualMonths;
+                const monthsText = actualMonths === 12 ? '' : ` (${actualMonths} months recorded)`;
 
                 container.append(`
                     <div class="col-12">
                         <div class="alert alert-info">
-                            <h4><i class="bi bi-calendar-check"></i> Year ${year} Summary</h4>
+                            <h4><i class="bi bi-calendar-check"></i> Year ${year} Summary${monthsText}</h4>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -462,7 +470,10 @@
                                 <i class="bi bi-currency-euro text-success" style="font-size: 3rem;"></i>
                                 <h3 class="mt-2">€ ${totalYearCost.toLocaleString('it-IT', { minimumFractionDigits: 2 })}</h3>
                                 <p class="text-muted mb-0">Total Cost</p>
-                                <small class="text-muted">kWh: €${data.kwhCost.toLocaleString('it-IT')} | Gas: €${data.smcCost.toLocaleString('it-IT')}</small>
+                                ${totalYearCost > 0 
+                                    ? `<small class="text-muted">kWh: €${data.kwhCost.toLocaleString('it-IT')} | Gas: €${data.smcCost.toLocaleString('it-IT')}</small>`
+                                    : `<small class="text-muted text-warning"><i class="bi bi-exclamation-triangle"></i> No cost data</small>`
+                                }
                             </div>
                         </div>
                     </div>
@@ -490,9 +501,9 @@
             title: 'Monthly Gas Consumption',
             vAxis: { title: 'Smc' }
         });
-        
+
         // Fade in del grafico SMC all'inizio (è già aperto)
-        setTimeout(function() {
+        setTimeout(function () {
             $('#smc_chart_div').addClass('loaded');
         }, 100);
 

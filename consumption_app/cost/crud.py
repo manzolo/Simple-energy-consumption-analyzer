@@ -4,6 +4,11 @@ from consumption_app.database.functions import get_db
 
 bp = Blueprint('cost', __name__)
 
+def ensure_null_for_empty(value):
+    """Converts empty string or None to None for proper SQLite NULL handling."""
+    if value == '' or value is None:
+        return None
+    return value
 
 @bp.route('/example')
 def example():
@@ -95,10 +100,17 @@ def update(cost_id):
 @bp.route('/cost', methods=['POST'])
 def add_cost():
     data = request.get_json()
+    
+    # 🌟 MODIFICA QUI
+    end_date = ensure_null_for_empty(data.get('end')) # Usa .get() per sicurezza
+    
     database_connection = get_db()
     cur = database_connection.cursor()
+    
+    # Inserisci end_date al posto di data['end']
     cur.execute('INSERT INTO cost (start, end, kwh, smc, kwh_cost, smc_cost) VALUES (?, ?, ?, ?, ?, ?)',
-                (data['start'], data['end'], data['kwh'], data['smc'], data['kwh_cost'], data['smc_cost']))
+                (data['start'], end_date, data['kwh'], data['smc'], data['kwh_cost'], data['smc_cost']))
+    
     database_connection.commit()
     database_connection.close()
     return jsonify({'status': 'add', 'id': cur.lastrowid})
@@ -108,10 +120,17 @@ def add_cost():
 @bp.route('/cost/<int:cost_id>', methods=['PUT'])
 def update_cost(cost_id):
     data = request.get_json()
+
+    # 🌟 MODIFICA QUI
+    end_date = ensure_null_for_empty(data.get('end'))
+    
     database_connection = get_db()
     cur = database_connection.cursor()
+    
+    # Aggiorna con end_date al posto di data['end']
     cur.execute('UPDATE cost SET start=?, end=?, kwh=?, smc=?, kwh_cost=?, smc_cost=? WHERE id_cost=?',
-                (data['start'], data['end'], data['kwh'], data['smc'], data['kwh_cost'], data['smc_cost'], cost_id))
+                (data['start'], end_date, data['kwh'], data['smc'], data['kwh_cost'], data['smc_cost'], cost_id))
+    
     database_connection.commit()
     database_connection.close()
     return jsonify({'status': 'update', 'id': cost_id})
