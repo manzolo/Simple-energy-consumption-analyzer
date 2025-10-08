@@ -1,6 +1,6 @@
 import json
 
-from consumption_app.date.functions import getMonthName
+from app.date.functions import getMonthName
 
 
 def getChartSettingsByType(type):

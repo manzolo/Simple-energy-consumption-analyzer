@@ -1,4 +1,4 @@
-from consumption_app.chart.functions import buildChartData, buildChartYearData
+from app.chart.functions import buildChartData, buildChartYearData
 
 
 def getKwh(query_data):

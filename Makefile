@@ -1,191 +1,204 @@
-# Energy Consumption App - Makefile
-# Usage: make [target]
+# Makefile per gestire l'applicazione Flask con Docker e Alembic
 
-.PHONY: help build start stop restart remove logs status push pull clean backup-db dev install test
+# Variabili
+COMPOSE = docker compose
+WEB_SERVICE = energy_web
+DB_SERVICE = energy_db
+APP_DIR = app
+MIGRATIONS_DIR = $(APP_DIR)/migrations
+VERSIONS_DIR = $(MIGRATIONS_DIR)/versions
+ENV_FILE = .env
 
-# Configuration
-IMAGE_NAME := manzolo/energy-consumption
-CONTAINER_NAME := energy-consumption
-PORT := 8000
-DB_PATH := ./consumption.db
+# Colori per output
+GREEN = \033[0;32m
+YELLOW = \033[1;33m
+RED = \033[0;31m
+NC = \033[0m # No Color
 
-# Colors
-BLUE := \033[0;34m
-GREEN := \033[0;32m
-YELLOW := \033[1;33m
-RED := \033[0;31m
-NC := \033[0m
+# Carica le variabili d'ambiente se il file .env esiste
+ifneq (,$(wildcard $(ENV_FILE)))
+    include $(ENV_FILE)
+    export
+endif
 
-help: ## Show this help message
-	@echo "$(BLUE)=====================================$(NC)"
-	@echo "$(BLUE)  Energy Consumption - Make targets$(NC)"
-	@echo "$(BLUE)=====================================$(NC)"
-	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-15s$(NC) %s\n", $$1, $$2}'
-	@echo ""
-#--no-cache 
-build: ## Build Docker image
-	@echo "$(BLUE)Building Docker image...$(NC)"
-	@docker build -t $(IMAGE_NAME):latest .
-	@echo "$(GREEN)✓ Image built successfully$(NC)"
+.DEFAULT_GOAL := help
 
-build-fast: ## Build Docker image with cache
-	@echo "$(BLUE)Building Docker image (using cache)...$(NC)"
-	@docker build -t $(IMAGE_NAME):latest .
-	@echo "$(GREEN)✓ Image built successfully$(NC)"
+## help: Mostra questo messaggio di aiuto
+help:
+	@echo "$(GREEN)Comandi disponibili:$(NC)"
+	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
 
-start: ## Start container
-	@if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-		echo "$(YELLOW)⚠ Container is already running$(NC)"; \
-	else \
-		if [ ! -f "$(DB_PATH)" ]; then \
-			echo "$(BLUE)Creating database file...$(NC)"; \
-			touch $(DB_PATH); \
-		fi; \
-		echo "$(BLUE)Starting container...$(NC)"; \
-		if [ "$$(docker ps -aq -f name=$(CONTAINER_NAME))" ]; then \
-			docker start $(CONTAINER_NAME); \
+## init: Inizializza il progetto (crea .env e struttura migrations)
+init: init-env init-migrations
+	@echo "$(GREEN)✓ Progetto inizializzato con successo!$(NC)"
+	@echo "$(YELLOW)Ricorda di modificare il file .env con le tue configurazioni$(NC)"
+
+## init-env: Crea il file .env da .env.example
+init-env:
+	@if [ ! -f $(ENV_FILE) ]; then \
+		if [ -f .env.example ]; then \
+			cp .env.example $(ENV_FILE); \
+			echo "$(GREEN)✓ File .env creato da .env.example$(NC)"; \
 		else \
-			docker run -d \
-				--name $(CONTAINER_NAME) \
-				--restart always \
-				-p $(PORT):$(PORT) \
-				-v $$(pwd)/consumption.db:/app/consumption_app/data/consumption.db \
-				$(IMAGE_NAME):latest; \
+			echo "$(RED)✗ File .env.example non trovato$(NC)"; \
+			exit 1; \
 		fi; \
-		echo "$(GREEN)✓ Container started$(NC)"; \
-		echo "$(BLUE)ℹ Access at: http://localhost:$(PORT)$(NC)"; \
-	fi
-
-stop: ## Stop container
-	@if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-		echo "$(BLUE)Stopping container...$(NC)"; \
-		docker stop $(CONTAINER_NAME); \
-		docker rm -f $(CONTAINER_NAME); \
-		echo "$(GREEN)✓ Container stopped$(NC)"; \
 	else \
-		echo "$(YELLOW)⚠ Container is not running$(NC)"; \
+		echo "$(YELLOW)⚠ File .env già esistente$(NC)"; \
 	fi
 
-restart: stop start ## Restart container
-
-remove: ## Remove container
-	@if [ "$$(docker ps -aq -f name=$(CONTAINER_NAME))" ]; then \
-		if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-			echo "$(BLUE)Stopping container first...$(NC)"; \
-			docker stop $(CONTAINER_NAME); \
+## init-migrations: Inizializza la directory delle migrazioni Alembic
+init-migrations:
+	@if [ ! -d $(MIGRATIONS_DIR) ]; then \
+		mkdir -p $(MIGRATIONS_DIR); \
+		mkdir -p $(VERSIONS_DIR); \
+		touch $(MIGRATIONS_DIR)/__init__.py; \
+		echo "$(GREEN)✓ Struttura migrations creata$(NC)"; \
+	else \
+		if [ ! -d $(VERSIONS_DIR) ]; then \
+			mkdir -p $(VERSIONS_DIR); \
+			echo "$(GREEN)✓ Directory versions creata$(NC)"; \
 		fi; \
-		echo "$(BLUE)Removing container...$(NC)"; \
-		docker rm $(CONTAINER_NAME); \
-		echo "$(GREEN)✓ Container removed$(NC)"; \
-	else \
-		echo "$(YELLOW)⚠ Container does not exist$(NC)"; \
+		if [ ! -f $(MIGRATIONS_DIR)/__init__.py ]; then \
+			touch $(MIGRATIONS_DIR)/__init__.py; \
+			echo "$(GREEN)✓ File __init__.py creato$(NC)"; \
+		fi; \
+		echo "$(YELLOW)⚠ Directory migrations già esistente$(NC)"; \
 	fi
 
-logs: ## Show container logs
-	@if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-		docker logs -f $(CONTAINER_NAME); \
-	else \
-		echo "$(RED)✗ Container is not running$(NC)"; \
-	fi
+## build: Costruisce le immagini Docker
+build:
+	@echo "$(GREEN)Costruzione delle immagini Docker...$(NC)"
+	$(COMPOSE) build
 
-status: ## Show container status
-	@echo ""
-	@echo "Container Status:"
-	@echo "----------------"
-	@echo "Name: $(CONTAINER_NAME)"
-	@echo "Image: $(IMAGE_NAME):latest"
-	@if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-		echo "Status: $(GREEN)running$(NC)"; \
-		echo "Port: $(PORT)"; \
-		echo "URL: http://localhost:$(PORT)"; \
-		echo ""; \
-		docker ps --filter "name=$(CONTAINER_NAME)" --format "table {{.ID}}\t{{.Status}}\t{{.Ports}}"; \
-	elif [ "$$(docker ps -aq -f name=$(CONTAINER_NAME))" ]; then \
-		echo "Status: $(YELLOW)stopped$(NC)"; \
-	else \
-		echo "Status: $(RED)not found$(NC)"; \
-	fi
-	@echo ""
+## up: Avvia i container in background
+up:
+	@echo "$(GREEN)Avvio dei container...$(NC)"
+	$(COMPOSE) up -d
+	@echo "$(GREEN)✓ Container avviati$(NC)"
+	@make ps
 
-push: ## Push image to Docker Hub
-	@echo "$(BLUE)Pushing image to Docker Hub...$(NC)"
-	@docker push $(IMAGE_NAME):latest
-	@echo "$(GREEN)✓ Image pushed successfully$(NC)"
+## down: Ferma e rimuove i container
+down:
+	@echo "$(YELLOW)Arresto dei container...$(NC)"
+	$(COMPOSE) down
+	@echo "$(GREEN)✓ Container fermati$(NC)"
 
-pull: ## Pull latest image from Docker Hub
-	@echo "$(BLUE)Pulling latest image...$(NC)"
-	@docker pull $(IMAGE_NAME):latest
-	@echo "$(GREEN)✓ Image pulled successfully$(NC)"
+## restart: Riavvia i container
+restart: down up
 
-clean: ## Remove container and unused images
-	@echo "$(YELLOW)⚠ This will remove the container and unused images$(NC)"
-	@read -p "Are you sure? (yes/no): " CONFIRM; \
-	if [ "$$CONFIRM" = "yes" ]; then \
-		$(MAKE) remove; \
-		echo "$(BLUE)Cleaning unused images...$(NC)"; \
-		docker image prune -f; \
-		echo "$(GREEN)✓ Cleanup completed$(NC)"; \
-	else \
-		echo "$(BLUE)ℹ Cancelled$(NC)"; \
-	fi
+## ps: Mostra lo stato dei container
+ps:
+	@$(COMPOSE) ps
 
-backup-db: ## Backup database
-	@if [ ! -f "$(DB_PATH)" ]; then \
-		echo "$(RED)✗ Database file not found$(NC)"; \
+## logs: Visualizza i log del servizio web
+logs:
+	$(COMPOSE) logs -f $(WEB_SERVICE)
+
+## logs-db: Visualizza i log del database
+logs-db:
+	$(COMPOSE) logs -f $(DB_SERVICE)
+
+## logs-all: Visualizza tutti i log
+logs-all:
+	$(COMPOSE) logs -f
+
+## shell: Apre una shell bash nel container web
+shell:
+	@echo "$(GREEN)Apertura shell nel container web...$(NC)"
+	$(COMPOSE) exec $(WEB_SERVICE) bash
+
+## shell-db: Apre una shell psql nel database
+shell-db:
+	@echo "$(GREEN)Apertura shell PostgreSQL...$(NC)"
+	$(COMPOSE) exec $(DB_SERVICE) psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+
+## migrate: Crea una nuova migrazione (richiede MSG="messaggio")
+migrate:
+	@if [ -z "$(MSG)" ]; then \
+		echo "$(RED)✗ Errore: Devi specificare un messaggio$(NC)"; \
+		echo "$(YELLOW)Uso: make migrate MSG='descrizione migrazione'$(NC)"; \
 		exit 1; \
 	fi
-	@BACKUP_NAME="consumption_backup_$$(date +%Y%m%d_%H%M%S).db"; \
-	echo "$(BLUE)Creating backup: $$BACKUP_NAME...$(NC)"; \
-	cp $(DB_PATH) $$BACKUP_NAME; \
-	echo "$(GREEN)✓ Backup created: $$BACKUP_NAME$(NC)"
-
-dev: ## Run in development mode (local)
-	@echo "$(BLUE)Starting development server...$(NC)"
-	@export APP_ENV=dev && python consumption_app/__init__.py
-
-install: ## Install Python dependencies
-	@echo "$(BLUE)Installing dependencies...$(NC)"
-	@pip install -e .
-	@echo "$(GREEN)✓ Dependencies installed$(NC)"
-
-test: ## Run tests (if available)
-	@echo "$(BLUE)Running tests...$(NC)"
-	@if [ -d "tests" ]; then \
-		python -m pytest tests/; \
-	else \
-		echo "$(YELLOW)⚠ No tests directory found$(NC)"; \
+	@if [ ! -d $(VERSIONS_DIR) ]; then \
+		echo "$(YELLOW)⚠ Directory versions mancante, creazione in corso...$(NC)"; \
+		mkdir -p $(VERSIONS_DIR); \
 	fi
+	@echo "$(GREEN)Creazione migrazione: $(MSG)$(NC)"
+	$(COMPOSE) exec $(WEB_SERVICE) alembic revision --autogenerate -m "$(MSG)"
+	@echo "$(GREEN)✓ Migrazione creata$(NC)"
 
-rebuild: remove build start ## Rebuild and restart everything
+## upgrade: Applica tutte le migrazioni pendenti
+upgrade:
+	@echo "$(GREEN)Applicazione migrazioni...$(NC)"
+	$(COMPOSE) exec $(WEB_SERVICE) alembic upgrade head
+	@echo "$(GREEN)✓ Migrazioni applicate$(NC)"
 
-rebuild-fast: remove build-fast start ## Fast rebuild and restart (with cache)
+## downgrade: Rollback dell'ultima migrazione
+downgrade:
+	@echo "$(YELLOW)Rollback dell'ultima migrazione...$(NC)"
+	$(COMPOSE) exec $(WEB_SERVICE) alembic downgrade -1
+	@echo "$(GREEN)✓ Rollback completato$(NC)"
 
-quick-update: build-fast restart ## Quick update without removing container
+## migrate-status: Verifica lo stato delle migrazioni
+migrate-status:
+	@echo "$(GREEN)Stato corrente delle migrazioni:$(NC)"
+	@$(COMPOSE) exec $(WEB_SERVICE) alembic current
 
-update: pull restart ## Pull latest image and restart
+## migrate-history: Mostra la cronologia delle migrazioni
+migrate-history:
+	@echo "$(GREEN)Cronologia delle migrazioni:$(NC)"
+	@$(COMPOSE) exec $(WEB_SERVICE) alembic history --verbose
 
-shell: ## Open shell in running container
-	@if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-		docker exec -it $(CONTAINER_NAME) /bin/sh; \
-	else \
-		echo "$(RED)✗ Container is not running$(NC)"; \
-	fi
+## db-reset: Reset completo del database (ATTENZIONE: cancella tutti i dati!)
+db-reset:
+	@echo "$(RED)⚠ ATTENZIONE: Questa operazione cancellerà tutti i dati!$(NC)"
+	@echo "Sei sicuro? [y/N] " && read ans && [ $${ans:-N} = y ]
+	@echo "$(YELLOW)Reset del database...$(NC)"
+	@$(COMPOSE) down -v
+	@rm -rf postgres_data
+	@$(COMPOSE) up -d
+	@sleep 5
+	@make upgrade
+	@echo "$(GREEN)✓ Database resettato$(NC)"
 
-inspect: ## Inspect container
-	@if [ "$$(docker ps -aq -f name=$(CONTAINER_NAME))" ]; then \
-		docker inspect $(CONTAINER_NAME); \
-	else \
-		echo "$(RED)✗ Container does not exist$(NC)"; \
-	fi
+## import-data: Importa dati da consumptions.xlsx e costs.xlsx
+import-data:
+	@echo "$(GREEN)Importazione dati da consumptions.xlsx e costs.xlsx...$(NC)"
+	$(COMPOSE) exec $(WEB_SERVICE) python import_data.py
+	@echo "$(GREEN)✓ Importazione completata$(NC)"
 
-stats: ## Show container resource usage
-	@if [ "$$(docker ps -q -f name=$(CONTAINER_NAME))" ]; then \
-		docker stats --no-stream $(CONTAINER_NAME); \
-	else \
-		echo "$(RED)✗ Container is not running$(NC)"; \
-	fi
+## test: Esegue i test (da implementare)
+test:
+	@echo "$(YELLOW)Test non ancora implementati$(NC)"
 
-deploy: build push ## Build and push image
+## clean: Rimuove container, immagini e volumi non utilizzati
+clean:
+	@echo "$(YELLOW)Pulizia di container, immagini e volumi...$(NC)"
+	$(COMPOSE) down --rmi all --volumes --remove-orphans
+	@echo "$(GREEN)✓ Pulizia completata$(NC)"
 
-full-deploy: backup-db build push update ## Full deployment (backup, build, push, update)
+## clean-all: Pulizia completa inclusi i dati del database
+clean-all: clean
+	@echo "$(YELLOW)Rimozione dati del database...$(NC)"
+	@rm -rf postgres_data
+	@echo "$(GREEN)✓ Pulizia completa$(NC)"
+
+## dev: Avvia l'ambiente di sviluppo
+dev: up logs
+
+## prod: Costruisce e avvia in modalità produzione
+prod:
+	@echo "$(GREEN)Avvio in modalità produzione...$(NC)"
+	@export FLASK_ENV=production && $(COMPOSE) up -d --build
+	@echo "$(GREEN)✓ Applicazione in produzione$(NC)"
+
+## fix-permissions: Corregge i permessi delle directory (utile se hai problemi)
+fix-permissions:
+	@echo "$(GREEN)Correzione permessi...$(NC)"
+	@chmod -R 755 $(APP_DIR)/migrations
+	@echo "$(GREEN)✓ Permessi corretti$(NC)"
+
+.PHONY: help init init-env init-migrations build up down restart ps logs logs-db logs-all \
+        shell shell-db migrate upgrade downgrade migrate-status migrate-history \
+        db-reset import-data test clean clean-all dev prod fix-permissions

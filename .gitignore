@@ -1,29 +1,32 @@
-DS_Store
-.env
-.flaskenv
-*.pyc
-*.pyo
-env/
-venv/
-.venv/
-env*
-dist/
-build/
-*.egg
+# Python
+__pycache__/
+*.py[cod]
 *.egg-info/
-.tox/
-.cache/
-.pytest_cache/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
 .idea/
-docs/_build/
-.vscode
+*.swp
+*.swo
+*~
 
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-*,cover
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
-#Project files
-consumption_app/data/*.db
+# Logs
+*.log
 
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml

@@ -1,18 +1,44 @@
-# Ignore Python bytecode files
+# Python
 __pycache__/
-*.pyc
-
-# Ignore development-specific files
-*.log
-*.swp
-*.sqlite3
-
-# Ignore virtual environment files
-venv/
-.pip/
-lib/
-include/
-bin/
+*.py[cod]
 *.egg-info/
+.installed.cfg
+*.egg
 
-consumption_app/data/*.db
+# Environment variables
+.env
+.env.local
+.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+postgres_data/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Git
+.git/
+.gitignore
+
+# Altri file di sviluppo
+venv/
+.env/
+*.md
+Makefile

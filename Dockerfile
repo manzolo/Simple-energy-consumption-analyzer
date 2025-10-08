@@ -1,18 +1,27 @@
-FROM python:3.11-alpine3.21
+# Usa un'immagine base di Python
+FROM python:3.11-slim
 
-# Imposta la directory di lavoro all'interno del container
+# Installa dipendenze di sistema necessarie per psql
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Imposta la directory di lavoro
 WORKDIR /app
 
-COPY . /app
+# Copia i requisiti e installa le dipendenze
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Installa le dipendenze dell'applicazione
-RUN pip install -e .
+# Copia il codice dell'applicazione
+COPY . .
 
-ENV APP_ENV=prod
-ENV SERVER_PORT=8000
+# Copia lo script di entrypoint
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
 
-# Esegui l'applicazione quando il container è avviato
-#CMD ["flask", "run"]
+# Espone la porta per Flask
+EXPOSE ${APP_PORT:-8000}
 
-ENTRYPOINT [""]
-CMD ["python", "/app/consumption_app/__init__.py"]
+# Definisce il comando di avvio
+ENTRYPOINT ["./entrypoint.sh"]

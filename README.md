@@ -1,16 +1,168 @@
-# Simple energy consumption analyzer
+# Flask App con Docker e Alembic
 
-Simple energy consumption analyzer
+Template per un'applicazione Flask con PostgreSQL, Docker e Alembic per la gestione delle migrazioni.
 
+## 🚀 Quick Start
 
-![immagine](https://user-images.githubusercontent.com/7722346/222005224-7b6f93c3-3a50-42c9-b539-f924537f9287.png)
+### Inizializzazione del progetto
 
-![immagine](https://user-images.githubusercontent.com/7722346/222005285-fb152c7d-e7d6-472c-a5f4-75cb33e676a0.png)
+```bash
+# 1. Inizializza il progetto (crea .env e directory migrations)
+make init
 
-![immagine](https://user-images.githubusercontent.com/7722346/222005311-bc1d14e4-1ed8-4cd9-955b-4b9b5fd79a4e.png)
+# 2. Modifica il file .env con le tue configurazioni
 
-![immagine](https://user-images.githubusercontent.com/7722346/222005330-79d97de2-2203-4722-97ae-5a4744319e87.png)
+# 3. Costruisci e avvia i container
+make build
+make up
 
-![immagine](https://user-images.githubusercontent.com/7722346/221442249-f0bf43cd-5d3a-4517-871f-396024a1f1b0.png)
+# 4. Crea la prima migrazione
+make migrate MSG="initial migration"
 
-![immagine](https://user-images.githubusercontent.com/7722346/221442258-19128ffe-7b1a-41ad-8d4a-69f48a4b59a0.png)
+# 5. Applica le migrazioni
+make upgrade
+```
+
+### Comandi principali
+
+```bash
+make help              # Mostra tutti i comandi disponibili
+make dev               # Avvia in modalità sviluppo con log
+make ps                # Mostra lo stato dei container
+make logs              # Visualizza i log dell'applicazione
+make shell             # Apri una shell nel container
+make restart           # Riavvia i container
+make down              # Ferma i container
+```
+
+## 📦 Gestione Database e Migrazioni
+
+### Creare una nuova migrazione
+
+```bash
+# Dopo aver modificato i modelli in app/models.py
+make migrate MSG="aggiungi campo email a User"
+```
+
+### Applicare le migrazioni
+
+```bash
+make upgrade
+```
+
+### Rollback di una migrazione
+
+```bash
+make downgrade
+```
+
+### Verificare lo stato delle migrazioni
+
+```bash
+make migrate-status      # Stato corrente
+make migrate-history     # Cronologia completa
+```
+
+### Accedere al database
+
+```bash
+make shell-db           # Apri shell PostgreSQL
+```
+
+### Reset completo del database (⚠️ ATTENZIONE!)
+
+```bash
+make db-reset           # Cancella tutto e ricrea
+```
+
+## 📁 Struttura del progetto
+
+```
+.
+├── app/
+│   ├── __init__.py           # Inizializzazione Flask app
+│   ├── models.py             # Modelli SQLAlchemy
+│   ├── routes.py             # Routes dell'applicazione
+│   └── migrations/           # Migrazioni Alembic
+│       ├── env.py            # Configurazione Alembic
+│       ├── script.py.mako    # Template per nuove migrazioni
+│       └── versions/         # File di migrazione
+├── docker-compose.yml        # Configurazione Docker
+├── Dockerfile                # Immagine Docker
+├── entrypoint.sh            # Script di avvio
+├── requirements.txt         # Dipendenze Python
+├── alembic.ini             # Configurazione Alembic
+├── Makefile                # Comandi di gestione
+├── .env                    # Variabili d'ambiente (non committare!)
+└── .env.example           # Template variabili d'ambiente
+```
+
+## 🔧 Configurazione
+
+### Variabili d'ambiente (.env)
+
+```bash
+# Flask
+FLASK_ENV=development
+SECRET_KEY=your-secret-key
+APP_PORT=8000
+APP_ENV=dev
+
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=myapp_db
+POSTGRES_PORT=5432
+
+# Database URL
+DATABASE_URL=postgresql://postgres:postgres@db:5432/myapp_db
+```
+
+## 📝 Workflow di sviluppo tipico
+
+1. **Modifica i modelli** in `app/models.py`
+2. **Crea una migrazione**: `make migrate MSG="descrizione"`
+3. **Applica la migrazione**: `make upgrade`
+4. **Testa le modifiche**: visita http://localhost:8000
+
+## 🛠️ Troubleshooting
+
+### I container non si avviano
+
+```bash
+# Controlla i log
+make logs-all
+
+# Ricostruisci le immagini
+make clean
+make build
+make up
+```
+
+### Problemi con le migrazioni
+
+```bash
+# Verifica lo stato
+make migrate-status
+
+# Se necessario, reset completo
+make db-reset
+```
+
+### Accesso al database negato
+
+Verifica che le credenziali in `.env` siano corrette e che il container del database sia in esecuzione (`make ps`).
+
+## 🧹 Pulizia
+
+```bash
+make clean          # Rimuove container e immagini
+make clean-all      # Rimuove anche i dati del database
+```
+
+## 📚 Risorse utili
+
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
+- [Alembic Documentation](https://alembic.sqlalchemy.org/)
+- [Docker Documentation](https://docs.docker.com/)

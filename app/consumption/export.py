@@ -1,24 +1,21 @@
 import io
-
 import xlsxwriter
 from flask import Response, jsonify, Blueprint
-
-from consumption_app.database.functions import get_db
+from app import db
+from app.models import Consumption
 
 bp = Blueprint('consumption_export', __name__)
 
 
 @bp.route('/consumption/export', methods=['GET'])
 def export_xls():
-    # Get all consumption records
-    database_connection = get_db()
-    cur = database_connection.cursor()
-    cur.execute('SELECT * FROM consumption')
-    rows = cur.fetchall()
-    database_connection.close()
+    # Get all consumption records usando SQLAlchemy
+    consumptions = Consumption.query.order_by(
+        Consumption.year.desc(), 
+        Consumption.month.desc()
+    ).all()
 
-    if rows:
-
+    if consumptions:
         # Create an in-memory Excel workbook and worksheet
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output)
@@ -32,12 +29,12 @@ def export_xls():
         worksheet.write(0, 4, 'SMC')
 
         # Write data
-        for i, row in enumerate(rows):
-            worksheet.write(i + 1, 0, row[0])
-            worksheet.write(i + 1, 1, row[1])
-            worksheet.write(i + 1, 2, row[2])
-            worksheet.write(i + 1, 3, row[3])
-            worksheet.write(i + 1, 4, row[4])
+        for i, consumption in enumerate(consumptions):
+            worksheet.write(i + 1, 0, consumption.id_consumption)
+            worksheet.write(i + 1, 1, consumption.year)
+            worksheet.write(i + 1, 2, consumption.month)
+            worksheet.write(i + 1, 3, consumption.kwh)
+            worksheet.write(i + 1, 4, consumption.smc)
 
         # Close the workbook
         workbook.close()
@@ -51,7 +48,5 @@ def export_xls():
         # Return the Excel file as a Flask response
         output.seek(0)
         return Response(output, headers=response_headers)
-
     else:
-
-        return jsonify({'error': 'Cost records not found.'}), 404
+        return jsonify({'error': 'Consumption records not found.'}), 404
