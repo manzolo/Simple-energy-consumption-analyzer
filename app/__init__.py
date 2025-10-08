@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_babel import Babel
 from flask_bootstrap import Bootstrap5
 from dotenv import load_dotenv
 import os
@@ -11,6 +12,22 @@ load_dotenv()
 db = SQLAlchemy()
 migrate = Migrate()
 bootstrap = Bootstrap5()
+babel = Babel()
+
+def get_locale():
+    """
+    Determina il locale in base a:
+    1. Parametro URL (?lang=it o ?lang=en)
+    2. Header Accept-Language del browser
+    3. Default: italiano
+    """
+    # Controlla se c'è un parametro lang nell'URL
+    lang = request.args.get('lang')
+    if lang in ['it', 'en']:
+        return lang
+    
+    # Altrimenti usa la lingua del browser
+    return request.accept_languages.best_match(['it', 'en']) or 'it'
 
 def create_app():
     app = Flask(__name__)
@@ -21,10 +38,14 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
     app.config['APP_ENV'] = os.getenv('APP_ENV', 'dev')  # Default to 'dev' if not set
     app.config['HTTP_PORT'] = int(os.getenv('HTTP_PORT', 8000))  # Default to 8000 if not set
+    # Babel
+    app.config['BABEL_DEFAULT_LOCALE'] = 'it'
+    app.config['BABEL_SUPPORTED_LOCALES'] = ['it', 'en']
 
     db.init_app(app)
     migrate.init_app(app, db)
     bootstrap.init_app(app)  # Inizializza Bootstrap
+    babel.init_app(app, locale_selector=get_locale)
 
     # Importa i modelli
     from . import models
