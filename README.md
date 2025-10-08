@@ -2,7 +2,7 @@
 
 Simple energy consumption analyzer
 
-<img width="1025" height="817" alt="image" src="https://github.com/user-attachments/assets/1fda73be-c2b2-4aaf-8dce-687f649d0197" />
+<img width="1316" height="826" alt="image" src="https://github.com/user-attachments/assets/e5760203-2578-4291-94aa-9a548a3dd595" />
 
 <img width="1025" height="517" alt="image" src="https://github.com/user-attachments/assets/c28247f0-2d4e-4c4c-916f-384e5aad74bb" />
 
