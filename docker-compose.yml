@@ -1,6 +1,7 @@
 services:
   energy_web:
     image: manzolo/energy-consumption:latest
+    container_name: energy_web
     build: .
     ports:
       - "${APP_PORT:-8000}:8000"
@@ -19,6 +20,7 @@ services:
 
   energy_db:
     image: postgres:15-alpine
+    container_name: energy_db
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
