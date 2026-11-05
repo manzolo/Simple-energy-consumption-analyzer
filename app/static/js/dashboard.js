@@ -96,44 +96,103 @@
     return { position: 'bottom', labels: { color: css('--em-muted'), usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 14, sort: (a, b) => a.text.localeCompare(b.text) } };
   }
 
-  // One series per year, each in its own color; the current (last) year is drawn thicker with markers.
+  // One series per year, each in its own color. One year is emphasized: the hovered one, else the
+  // clicked (locked) one, else the current year. Clicking a bar/point or a legend entry locks a year
+  // across every month-by-month chart; clicking it again, or on empty space, unlocks.
+  let focusYear = null;
+  const yearCharts = new Set();
+
+  function emphasized(chart) {
+    return chart.$hoverYear ?? focusYear ?? chart.$newest;
+  }
+
+  function paint(datasets, bar, emph, locked) {
+    datasets.forEach((ds) => {
+      const c = yearColor(ds.year), strong = ds.year === emph;
+      const fade = locked ? 0.16 : 0.38;
+      ds.backgroundColor = bar ? (strong ? c : rgba(c, fade)) : rgba(c, 0.15);
+      ds.borderColor = strong ? c : rgba(c, locked ? 0.22 : 0.55);
+      ds.borderWidth = bar ? 0 : (strong ? 4 : 1.75);
+      ds.pointRadius = bar ? 0 : (strong ? 4.5 : 0);
+      ds.pointBackgroundColor = c;
+      ds.hoverBackgroundColor = ds.backgroundColor;
+      ds.hoverBorderColor = ds.borderColor;
+      ds.order = bar ? 0 : (strong ? 0 : 1);
+    });
+  }
+
+  function styleYears(chart) {
+    paint(chart.data.datasets, chart.config.type === 'bar', emphasized(chart), chart.$hoverYear != null || focusYear != null);
+  }
+
+  function restyleAll() {
+    yearCharts.forEach((ch) => { styleYears(ch); ch.update(); });
+  }
+
+  function yearAt(chart, evt) {
+    const bar = chart.config.type === 'bar';
+    const hit = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: bar, axis: bar ? 'x' : 'xy' }, false);
+    return hit.length ? chart.data.datasets[hit[0].datasetIndex].year : null;
+  }
+
+  function toggleFocus(yr) {
+    focusYear = (yr == null || yr === focusYear) ? null : yr;
+    restyleAll();
+  }
+
   function drawByYear(id, key, unit, digits, chartMode, extra = {}) {
-    if (charts[id]) charts[id].destroy();
+    if (charts[id]) { yearCharts.delete(charts[id]); charts[id].destroy(); }
     const years = D.monthly ? D.monthly.years : [];
     const newest = years[years.length - 1];
     const surface = css('--em-surface');
     const bar = chartMode === 'bar';
-    const datasets = years.map((yr) => {
-      const c = yearColor(yr), cur = yr === newest;
-      return {
-        label: cur ? `${yr} · ${T('in_progress')}` : String(yr), data: D.monthly[key][yr],
-        // The current year is solid and thick; the others keep their hue but step back.
-        borderColor: cur ? c : rgba(c, 0.55),
-        backgroundColor: bar ? (cur ? c : rgba(c, 0.38)) : rgba(c, 0.15),
-        borderWidth: bar ? (cur ? 0 : 1) : (cur ? 4 : 1.75),
-        pointRadius: bar ? 0 : (cur ? 4.5 : 0), pointHoverRadius: 5,
-        pointBackgroundColor: c, pointBorderColor: surface, pointBorderWidth: 2,
-        tension: 0.3, spanGaps: false, borderRadius: 4, order: bar ? 0 : (cur ? 0 : 1),
-        stepped: bar ? false : (extra.stepped || false),
-        barPercentage: 0.9, categoryPercentage: 0.82,
-      };
-    });
-    charts[id] = new Chart(document.getElementById(id), {
+    const datasets = years.map((yr) => ({
+      year: yr, label: yr === newest ? `${yr} · ${T('in_progress')}` : String(yr), data: D.monthly[key][yr],
+      pointHoverRadius: 6, pointBorderColor: surface, pointBorderWidth: 2,
+      tension: 0.3, spanGaps: false, borderRadius: 4,
+      stepped: bar ? false : (extra.stepped || false),
+      barPercentage: 0.9, categoryPercentage: 0.82,
+    }));
+    paint(datasets, bar, focusYear ?? newest, focusYear != null);
+    const lg = legend();
+    lg.onClick = (e, item) => toggleFocus(datasets[item.datasetIndex].year);
+    lg.onHover = (e) => { e.native.target.style.cursor = 'pointer'; };
+    lg.onLeave = (e) => { e.native.target.style.cursor = ''; };
+    const chart = new Chart(document.getElementById(id), {
       type: chartMode,
       data: { labels: Array.from({ length: 12 }, (_, i) => monthName(i + 1, 'short')), datasets },
       options: {
         responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
         interaction: { mode: 'index', intersect: false },
+        onHover: (evt, _els, ch) => {
+          const yr = yearAt(ch, evt);
+          ch.canvas.style.cursor = yr != null ? 'pointer' : '';
+          if (yr !== ch.$hoverYear) { ch.$hoverYear = yr; styleYears(ch); ch.update(); }
+        },
+        onClick: (evt, _els, ch) => toggleFocus(yearAt(ch, evt)),
         plugins: {
-          legend: legend(),
-          tooltip: { callbacks: {
-            title: (items) => items.length ? monthName(items[0].dataIndex + 1) : '',
-            label: (c) => c.parsed.y == null ? null : ` ${c.dataset.label}: ${extra.money ? '€ ' : ''}${num(c.parsed.y, digits)}${unit ? ' ' + unit : ''}`,
-          } },
+          colors: { enabled: false },
+          legend: lg,
+          tooltip: {
+            itemSort: (a, b) => b.dataset.year - a.dataset.year,
+            callbacks: {
+              title: (items) => items.length ? monthName(items[0].dataIndex + 1) : '',
+              label: (c) => c.parsed.y == null ? null : ` ${c.dataset.year}: ${extra.money ? '€ ' : ''}${num(c.parsed.y, digits)}${unit ? ' ' + unit : ''}`,
+            },
+          },
         },
         scales: axes((v) => num(v, extra.tickDigits ?? 0), { zero: bar ? true : extra.zero, yTicks: extra.yTicks }),
       },
     });
+    chart.$newest = newest;
+    chart.$hoverYear = null;
+    chart.canvas.addEventListener('mouseleave', () => {
+      if (chart.$hoverYear != null) { chart.$hoverYear = null; styleYears(chart); chart.update(); }
+    });
+    styleYears(chart);
+    chart.update('none');
+    yearCharts.add(chart);
+    charts[id] = chart;
   }
 
   function drawYearTotals(id, key, colorVar, unit) {

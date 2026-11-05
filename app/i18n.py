@@ -60,6 +60,7 @@ S = {
     'smc_bill': ('Rata gas (€/mese)', 'Gas installment (€/month)'),
     'now': ('oggi', 'now'),
     'in_progress': ('in corso', 'current'),
+    'focus_hint': ('clic su una barra o su un anno della legenda per evidenziarlo ovunque', 'click a bar or a legend year to highlight it everywhere'),
 
     # readings
     'readings_title': ('Letture', 'Readings'),
