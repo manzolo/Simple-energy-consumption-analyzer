@@ -1,0 +1,217 @@
+/* Energy Monitor — design layer over Bootstrap 5.3.
+   Tokens first; light by default, dark via [data-bs-theme="dark"] (set from the OS or the toggle). */
+
+:root {
+  --em-bg: #f5f6f8;
+  --em-surface: #ffffff;
+  --em-surface-2: #f0f2f5;
+  --em-border: #e3e6eb;
+  --em-text: #1a1d23;
+  --em-muted: #687080;
+  --em-accent: #4f46e5;
+  --em-accent-soft: rgba(79, 70, 229, .10);
+  --em-kwh: #d97706;
+  --em-kwh-soft: rgba(217, 119, 6, .12);
+  --em-smc: #0284c7;
+  --em-smc-soft: rgba(2, 132, 199, .12);
+  --em-good: #15803d;
+  --em-bad: #b91c1c;
+  --em-radius: 14px;
+  --em-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .06);
+  --em-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+[data-bs-theme="dark"] {
+  --em-bg: #0e1014;
+  --em-surface: #161920;
+  --em-surface-2: #1d2129;
+  --em-border: #272c36;
+  --em-text: #e6e8ec;
+  --em-muted: #959cab;
+  --em-accent: #8b85ff;
+  --em-accent-soft: rgba(139, 133, 255, .14);
+  --em-kwh: #f5a524;
+  --em-kwh-soft: rgba(245, 165, 36, .14);
+  --em-smc: #38bdf8;
+  --em-smc-soft: rgba(56, 189, 248, .14);
+  --em-good: #4ade80;
+  --em-bad: #f87171;
+  --em-shadow: none;
+}
+
+/* Bootstrap bridge */
+:root, [data-bs-theme="dark"] {
+  --bs-body-bg: var(--em-bg);
+  --bs-body-color: var(--em-text);
+  --bs-border-color: var(--em-border);
+  --bs-secondary-color: var(--em-muted);
+  --bs-tertiary-bg: var(--em-surface-2);
+  --bs-primary: var(--em-accent);
+  --bs-link-color: var(--em-accent);
+  --bs-link-hover-color: var(--em-accent);
+  --bs-body-font-family: var(--em-font);
+}
+
+body {
+  background: var(--em-bg);
+  color: var(--em-text);
+  font-family: var(--em-font);
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+.text-muted { color: var(--em-muted) !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Top bar ---------- */
+.em-topbar {
+  position: sticky; top: 0; z-index: 1020;
+  background: color-mix(in srgb, var(--em-surface) 88%, transparent);
+  backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid var(--em-border);
+}
+.em-topbar .container { display: flex; align-items: center; gap: 1rem; min-height: 60px; }
+.em-brand {
+  display: flex; align-items: center; gap: .6rem;
+  font-weight: 650; letter-spacing: -.01em; color: var(--em-text); text-decoration: none;
+}
+.em-brand:hover { color: var(--em-text); }
+.em-brand-mark {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+  background: var(--em-accent); color: #fff; font-size: 1rem;
+}
+.em-nav { display: flex; gap: .25rem; margin-left: auto; overflow-x: auto; }
+.em-nav a {
+  display: flex; align-items: center; gap: .4rem; white-space: nowrap;
+  padding: .45rem .8rem; border-radius: 9px; font-size: .925rem; font-weight: 500;
+  color: var(--em-muted); text-decoration: none;
+}
+.em-nav a:hover { color: var(--em-text); background: var(--em-surface-2); }
+.em-nav a.active { color: var(--em-text); background: var(--em-surface-2); }
+.em-theme-btn {
+  border: 1px solid var(--em-border); background: transparent; color: var(--em-muted);
+  width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; flex: none;
+}
+.em-theme-btn:hover { color: var(--em-text); background: var(--em-surface-2); }
+@media (max-width: 575.98px) {
+  .em-nav a span { display: none; }
+  .em-brand-name { display: none; }
+}
+
+/* ---------- Page header ---------- */
+.em-page-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; margin: 2rem 0 1.5rem; }
+.em-page-head h1 { font-size: 1.6rem; font-weight: 680; letter-spacing: -.02em; margin: 0; }
+.em-page-head .em-sub { color: var(--em-muted); margin: .25rem 0 0; font-size: .95rem; }
+.em-page-head .em-actions { margin-left: auto; display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* ---------- Surfaces ---------- */
+.card, .em-card {
+  background: var(--em-surface);
+  border: 1px solid var(--em-border);
+  border-radius: var(--em-radius);
+  box-shadow: var(--em-shadow);
+}
+.card { margin-bottom: 1.25rem; }
+.card-header { background: transparent; border-bottom: 1px solid var(--em-border); padding: 1rem 1.25rem; }
+.em-card { padding: 1.25rem; height: 100%; }
+.em-card-title {
+  display: flex; align-items: center; gap: .5rem; margin: 0 0 1rem;
+  font-size: .95rem; font-weight: 620; color: var(--em-text);
+}
+.em-card-title .em-hint { margin-left: auto; font-weight: 400; font-size: .825rem; color: var(--em-muted); }
+
+/* ---------- KPI tiles ---------- */
+.em-kpi { display: flex; flex-direction: column; gap: .35rem; }
+.em-kpi-label { display: flex; align-items: center; gap: .45rem; font-size: .825rem; color: var(--em-muted); font-weight: 500; }
+.em-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.em-dot.kwh { background: var(--em-kwh); }
+.em-dot.smc { background: var(--em-smc); }
+.em-dot.acc { background: var(--em-accent); }
+.em-kpi-value { font-size: 1.75rem; font-weight: 680; letter-spacing: -.02em; line-height: 1.15; }
+.em-kpi-value small { font-size: .9rem; font-weight: 500; color: var(--em-muted); margin-left: .2rem; letter-spacing: 0; }
+.em-kpi-rows { display: grid; gap: .35rem; margin-top: .15rem; }
+.em-kpi-row { display: flex; align-items: baseline; gap: .5rem; font-size: .95rem; }
+.em-kpi-row strong { font-weight: 650; }
+.em-kpi-foot { font-size: .825rem; color: var(--em-muted); margin-top: auto; }
+.em-delta { font-size: .8rem; font-weight: 600; padding: .1rem .45rem; border-radius: 999px; white-space: nowrap; }
+.em-delta.down { color: var(--em-good); background: color-mix(in srgb, var(--em-good) 12%, transparent); }
+.em-delta.up { color: var(--em-bad); background: color-mix(in srgb, var(--em-bad) 12%, transparent); }
+.em-delta.flat { color: var(--em-muted); background: var(--em-surface-2); }
+
+/* ---------- Segmented control ---------- */
+.em-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--em-surface-2); border: 1px solid var(--em-border); }
+.em-seg button {
+  border: 0; background: transparent; color: var(--em-muted); font-size: .85rem; font-weight: 550;
+  padding: .3rem .75rem; border-radius: 8px; display: flex; align-items: center; gap: .35rem;
+}
+.em-seg button.active { background: var(--em-surface); color: var(--em-text); box-shadow: var(--em-shadow); }
+[data-bs-theme="dark"] .em-seg button.active { background: var(--em-border); }
+
+.em-chart { position: relative; height: 280px; }
+.em-chart.sm { height: 200px; }
+
+/* ---------- Year table with inline bars ---------- */
+.em-years { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.em-years th {
+  font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--em-muted); padding: 0 .75rem .6rem; text-align: left; white-space: nowrap;
+}
+.em-years td { padding: .65rem .75rem; border-top: 1px solid var(--em-border); vertical-align: middle; }
+.em-years .r { text-align: right; }
+.em-bar { height: 6px; border-radius: 3px; background: var(--em-surface-2); overflow: hidden; margin-top: .35rem; min-width: 80px; }
+.em-bar > span { display: block; height: 100%; border-radius: 3px; }
+.em-bar.kwh > span { background: var(--em-kwh); }
+.em-bar.smc > span { background: var(--em-smc); }
+
+/* ---------- Buttons ---------- */
+.btn { border-radius: 10px; font-weight: 550; display: inline-flex; align-items: center; gap: .4rem; }
+.btn-primary {
+  --bs-btn-bg: var(--em-accent); --bs-btn-border-color: var(--em-accent);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--em-accent) 88%, #000); --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-bg: color-mix(in srgb, var(--em-accent) 80%, #000);
+  --bs-btn-color: #fff; --bs-btn-hover-color: #fff;
+}
+.btn-ghost, .btn-success, .btn-secondary, .btn-outline-secondary {
+  --bs-btn-bg: var(--em-surface); --bs-btn-color: var(--em-text); --bs-btn-border-color: var(--em-border);
+  --bs-btn-hover-bg: var(--em-surface-2); --bs-btn-hover-color: var(--em-text); --bs-btn-hover-border-color: var(--em-border);
+  --bs-btn-active-bg: var(--em-surface-2); --bs-btn-active-color: var(--em-text); --bs-btn-active-border-color: var(--em-border);
+}
+.btn-icon { padding: .3rem .5rem; color: var(--em-muted); border: 0; background: transparent; border-radius: 8px; }
+.btn-icon:hover { color: var(--em-text); background: var(--em-surface-2); }
+.btn-icon.danger:hover { color: var(--em-bad); }
+
+/* ---------- Tables (list pages) ---------- */
+.table { --bs-table-bg: transparent; --bs-table-hover-bg: var(--em-surface-2); --bs-table-color: var(--em-text); margin-bottom: 0; }
+.table thead th {
+  font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--em-muted); border-bottom: 1px solid var(--em-border); background: transparent;
+}
+.table td { border-color: var(--em-border); }
+.em-month { font-weight: 550; }
+.em-unit { color: var(--em-muted); font-size: .825rem; margin-left: .15rem; }
+.em-id { color: var(--em-muted); font-size: .8rem; }
+
+/* ---------- Stat boxes (list pages) ---------- */
+.em-stat { background: var(--em-surface-2); border-radius: 12px; padding: .85rem 1rem; height: 100%; }
+.em-stat small { color: var(--em-muted); display: block; font-size: .8rem; }
+.em-stat strong { font-size: 1.25rem; font-weight: 650; }
+
+/* ---------- Forms ---------- */
+.form-control, .form-select {
+  background-color: var(--em-surface); border-color: var(--em-border); border-radius: 10px; color: var(--em-text);
+}
+.form-control:focus, .form-select:focus { border-color: var(--em-accent); box-shadow: 0 0 0 3px var(--em-accent-soft); }
+.input-group-text { background: var(--em-surface-2); border-color: var(--em-border); color: var(--em-muted); border-radius: 10px; }
+.form-label { font-size: .875rem; font-weight: 550; margin-bottom: .35rem; }
+.em-form { max-width: 560px; }
+
+/* ---------- Pagination, toast, misc ---------- */
+.pagination { --bs-pagination-bg: var(--em-surface); --bs-pagination-border-color: var(--em-border); --bs-pagination-color: var(--em-text);
+  --bs-pagination-active-bg: var(--em-accent); --bs-pagination-active-border-color: var(--em-accent); margin: 0; }
+.toast { border-radius: 12px; border: 1px solid var(--em-border); background: var(--em-surface); }
+.toast-header { background: transparent; border-bottom: 1px solid var(--em-border); color: var(--em-text); }
+.loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, .25); z-index: 9998; }
+.loading-spinner { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+
+.em-footer { color: var(--em-muted); font-size: .825rem; border-top: 1px solid var(--em-border); padding: 1.25rem 0; margin-top: 3rem; }
+.em-empty { text-align: center; color: var(--em-muted); padding: 3rem 1rem; }

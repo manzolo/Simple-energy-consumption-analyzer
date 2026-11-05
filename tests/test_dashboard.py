@@ -1,0 +1,71 @@
+"""Known input → expected output for the overview numbers (python -m unittest)."""
+import unittest
+from datetime import date
+
+from app.chart.dashboard import build_dashboard, cost_for_month
+
+C = [  # (year, month, kwh, smc) — real values from the NeN bills
+    (2025, 8, 238, 9), (2025, 9, 280, 13), (2025, 10, 327, 23),
+    (2026, 1, 304, 297), (2026, 8, 296, 7.88), (2026, 9, 276, 10.84),
+]
+CONS = [{'year': y, 'month': m, 'kwh': k, 'smc': s} for y, m, k, s in C]
+COSTS = [
+    {'start': date(2024, 10, 31), 'end': date(2025, 10, 30), 'kwh': 99.64, 'smc': 107.34, 'kwh_cost': 0.136, 'smc_cost': 0.49},
+    {'start': date(2025, 10, 31), 'end': date(2026, 10, 30), 'kwh': 102.97, 'smc': 134.53, 'kwh_cost': 0.124, 'smc_cost': 0.44},
+    {'start': date(2026, 10, 31), 'end': None, 'kwh': 86.91, 'smc': 122.05, 'kwh_cost': 0.124, 'smc_cost': 0.46},
+]
+TODAY = date(2026, 11, 5)
+
+
+class Dashboard(unittest.TestCase):
+    def setUp(self):
+        self.d = build_dashboard(CONS, COSTS, today=TODAY)
+
+    def test_decimals_are_kept(self):
+        self.assertEqual(self.d['last']['smc'], 10.84)
+        self.assertEqual(self.d['monthly']['smc']['2026'][7], 7.88)
+
+    def test_last_month_vs_same_month_last_year(self):
+        L = self.d['last']
+        self.assertEqual((L['year'], L['month'], L['kwh']), (2026, 9, 276))
+        self.assertEqual((L['prev_kwh'], L['prev_smc']), (280, 13))
+        self.assertEqual(L['kwh_pct'], -1.4)
+        self.assertEqual(L['smc_pct'], -16.6)
+
+    def test_ytd_compares_only_months_present_in_both_years(self):
+        Y = self.d['ytd']
+        self.assertEqual((Y['months'], Y['first_month'], Y['last_month']), (3, 1, 9))
+        self.assertEqual(Y['kwh'], 876)            # 304 + 296 + 276
+        self.assertEqual(Y['compared_months'], 2)  # Aug, Sep (no Jan 2025 here)
+        self.assertEqual(Y['prev_kwh'], 518)       # 238 + 280
+        self.assertEqual(Y['kwh_pct'], round((572 - 518) / 518 * 100, 1))
+
+    def test_current_rate_is_the_open_period(self):
+        R = self.d['rate']
+        self.assertEqual((R['kwh'], R['smc'], R['total']), (86.91, 122.05, 208.96))
+
+    def test_cost_period_for_a_month(self):
+        self.assertEqual(cost_for_month(COSTS, 2025, 10, TODAY)['kwh'], 99.64)   # Oct 1st 2025 → old period
+        self.assertEqual(cost_for_month(COSTS, 2025, 11, TODAY)['kwh'], 102.97)
+        self.assertIsNone(cost_for_month(COSTS, 2020, 1, TODAY))
+
+    def test_yearly_totals_and_cost(self):
+        y26, y25 = self.d['years']
+        self.assertEqual((y26['year'], y26['months'], y26['kwh'], y26['smc']), (2026, 3, 876, 315.72))
+        self.assertEqual(y26['cost'], round(3 * (102.97 + 134.53), 2))
+        self.assertEqual(y25['cost'], round(3 * (99.64 + 107.34), 2))
+
+    def test_chart_has_twelve_slots_and_gaps(self):
+        k = self.d['monthly']['kwh']['2026']
+        self.assertEqual(len(k), 12)
+        self.assertIsNone(k[1])
+        self.assertEqual(k[0], 304)
+
+    def test_empty(self):
+        d = build_dashboard([], [], today=TODAY)
+        self.assertIsNone(d['last'])
+        self.assertEqual(d['years'], [])
+
+
+if __name__ == '__main__':
+    unittest.main()

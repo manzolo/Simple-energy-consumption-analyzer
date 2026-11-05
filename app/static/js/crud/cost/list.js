@@ -6,12 +6,12 @@ function renderData(cost) {
   };
   
   return `<tr data-id="${cost.id}" class="cost-row">
-            <td><span class="badge bg-secondary">${cost.id}</span></td>
+            <td><span class="em-id">#${cost.id}</span></td>
             <td contenteditable="false">
               <i class="bi bi-calendar-check"></i> ${formatDate(cost.start)}
             </td>
             <td contenteditable="false">
-              ${cost.end ? '<i class="bi bi-calendar-x"></i> ' + formatDate(cost.end) : '<span class="badge bg-info">Current</span>'}
+              ${cost.end ? '<i class="bi bi-calendar-x"></i> ' + formatDate(cost.end) : '<span class="em-delta down">Current</span>'}
             </td>
             <td contenteditable="false" class="text-end">
               <strong>€ ${parseFloat(cost.kwh).toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
@@ -28,12 +28,12 @@ function renderData(cost) {
               <small class="text-muted">/Smc</small>
             </td>
             <td class="text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <button class="btn btn-outline-warning" onclick="editCost(${cost.id})" 
+              <div class="text-nowrap">
+                <button class="btn-icon" onclick="editCost(${cost.id})" 
                         data-bs-toggle="tooltip" title="Edit">
                   <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-outline-danger" onclick="deleteCost(${cost.id})"
+                <button class="btn-icon danger" onclick="deleteCost(${cost.id})"
                         data-bs-toggle="tooltip" title="Delete">
                   <i class="bi bi-trash"></i>
                 </button>

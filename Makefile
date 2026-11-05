@@ -168,9 +168,9 @@ import-data:
 	$(COMPOSE) exec $(WEB_SERVICE) python import_data.py
 	@echo "$(GREEN)✓ Importazione completata$(NC)"
 
-## test: Esegue i test (da implementare)
+## test: Esegue i test (unittest nel container web, senza DB)
 test:
-	@echo "$(YELLOW)Test non ancora implementati$(NC)"
+	@$(COMPOSE) run --rm --no-deps --entrypoint python $(WEB_SERVICE) -m unittest discover -s tests -t . -v
 
 ## clean: Rimuove container, immagini e volumi non utilizzati
 clean:
