@@ -172,6 +172,11 @@ import-data:
 test:
 	@$(COMPOSE) run --rm --no-deps --entrypoint python $(WEB_SERVICE) -m unittest discover -s tests -t . -v
 
+## check-public: Prima di pubblicare: niente .env, chiavi, dump, host di casa o coordinate (tutta la storia)
+check-public:
+	@./scripts/check-public.sh --self-test
+	@./scripts/check-public.sh
+
 ## clean: Rimuove container, immagini e volumi non utilizzati
 clean:
 	@echo "$(YELLOW)Pulizia di container, immagini e volumi...$(NC)"
