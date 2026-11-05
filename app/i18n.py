@@ -59,6 +59,7 @@ S = {
     'kwh_bill': ('Rata luce (€/mese)', 'Electricity installment (€/month)'),
     'smc_bill': ('Rata gas (€/mese)', 'Gas installment (€/month)'),
     'now': ('oggi', 'now'),
+    'in_progress': ('in corso', 'current'),
 
     # readings
     'readings_title': ('Letture', 'Readings'),

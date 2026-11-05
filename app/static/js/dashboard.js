@@ -74,7 +74,8 @@
   }
 
   // ---------- Charts ----------
-  let mode = 'line';
+  let mode = 'bar';
+  try { const m = localStorage.getItem('em-chart-mode'); if (m === 'line' || m === 'bar') mode = m; } catch (e) {}
   const charts = {};
 
   function rgba(hex, a) {
@@ -101,17 +102,20 @@
     const years = D.monthly ? D.monthly.years : [];
     const newest = years[years.length - 1];
     const surface = css('--em-surface');
+    const bar = chartMode === 'bar';
     const datasets = years.map((yr) => {
       const c = yearColor(yr), cur = yr === newest;
       return {
-        label: String(yr), data: D.monthly[key][yr],
-        borderColor: c, backgroundColor: chartMode === 'bar' ? c : rgba(c, 0.15),
-        borderWidth: chartMode === 'bar' ? 0 : (cur ? 3 : 2),
-        pointRadius: chartMode === 'bar' ? 0 : (cur ? 4 : 2.5), pointHoverRadius: 5,
-        pointBackgroundColor: c, pointBorderColor: surface, pointBorderWidth: 1.5,
-        tension: 0.3, spanGaps: false, borderRadius: 4, order: cur ? 0 : 1,
-        stepped: extra.stepped || false,
-        barPercentage: 0.85, categoryPercentage: 0.8,
+        label: cur ? `${yr} · ${T('in_progress')}` : String(yr), data: D.monthly[key][yr],
+        // The current year is solid and thick; the others keep their hue but step back.
+        borderColor: cur ? c : rgba(c, 0.55),
+        backgroundColor: bar ? (cur ? c : rgba(c, 0.38)) : rgba(c, 0.15),
+        borderWidth: bar ? (cur ? 0 : 1) : (cur ? 4 : 1.75),
+        pointRadius: bar ? 0 : (cur ? 4.5 : 0), pointHoverRadius: 5,
+        pointBackgroundColor: c, pointBorderColor: surface, pointBorderWidth: 2,
+        tension: 0.3, spanGaps: false, borderRadius: 4, order: bar ? 0 : (cur ? 0 : 1),
+        stepped: bar ? false : (extra.stepped || false),
+        barPercentage: 0.9, categoryPercentage: 0.82,
       };
     });
     charts[id] = new Chart(document.getElementById(id), {
@@ -127,7 +131,7 @@
             label: (c) => c.parsed.y == null ? null : ` ${c.dataset.label}: ${extra.money ? '€ ' : ''}${num(c.parsed.y, digits)}${unit ? ' ' + unit : ''}`,
           } },
         },
-        scales: axes((v) => num(v, extra.tickDigits ?? 0), { zero: extra.zero, yTicks: extra.yTicks }),
+        scales: axes((v) => num(v, extra.tickDigits ?? 0), { zero: bar ? true : extra.zero, yTicks: extra.yTicks }),
       },
     });
   }
@@ -171,6 +175,10 @@
   function drawMain() {
     drawByYear('smcChart', 'smc', 'Smc', 2, mode);
     drawByYear('kwhChart', 'kwh', 'kWh', 2, mode);
+    drawByYear('kwhCostChart', 'kwh_cost', '€/kWh', 4, mode, { stepped: 'middle', zero: false, tickDigits: 2, yTicks: 4 });
+    drawByYear('smcCostChart', 'smc_cost', '€/Smc', 4, mode, { stepped: 'middle', zero: false, tickDigits: 2, yTicks: 4 });
+    drawByYear('kwhBillChart', 'kwh_bill', '', 2, mode, { money: true, yTicks: 4 });
+    drawByYear('smcBillChart', 'smc_bill', '', 2, mode, { money: true, yTicks: 4 });
   }
 
   function drawAll() {
@@ -179,10 +187,6 @@
     drawMain();
     drawYearTotals('kwhYearChart', 'kwh', '--em-kwh', 'kWh');
     drawYearTotals('smcYearChart', 'smc', '--em-smc', 'Smc');
-    drawByYear('kwhCostChart', 'kwh_cost', '€/kWh', 4, 'line', { stepped: 'middle', zero: false, tickDigits: 2, yTicks: 4 });
-    drawByYear('smcCostChart', 'smc_cost', '€/Smc', 4, 'line', { stepped: 'middle', zero: false, tickDigits: 2, yTicks: 4 });
-    drawByYear('kwhBillChart', 'kwh_bill', '', 2, 'bar', { money: true, yTicks: 4 });
-    drawByYear('smcBillChart', 'smc_bill', '', 2, 'bar', { money: true, yTicks: 4 });
     drawPrices('kwhPriceChart', 'kwh_cost', '--em-kwh', '€/kWh');
     drawPrices('smcPriceChart', 'smc_cost', '--em-smc', '€/Smc');
   }
@@ -190,10 +194,12 @@
   document.querySelectorAll('#chartMode button').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('#chartMode button').forEach((x) => x.classList.toggle('active', x === b));
     mode = b.dataset.mode;
+    try { localStorage.setItem('em-chart-mode', mode); } catch (e) {}
     drawMain();
   }));
   document.addEventListener('em-theme', drawAll);
 
+  document.querySelectorAll('#chartMode button').forEach((x) => x.classList.toggle('active', x.dataset.mode === mode));
   renderKpis();
   renderYears();
   drawAll();
