@@ -27,7 +27,7 @@ $(document).ready(function(){
     })
     .catch(error => {
         console.error(error);
-        toast('Error', 'Error retrieving cost record', true, 5000);
+        toast(T('error'), T('period_load_failed'), true, 5000, 'error');
     });
 
     updateForm.addEventListener('submit', (event) => {
@@ -50,15 +50,15 @@ $(document).ready(function(){
         .then(response => response.json())
         .then(data => {
             hideLoading();
-            toast('Success', `Cost updated with ID ${data.id}`, true, 3000);
+            toast(T('success'), T('period_saved', { id: data.id }), true, 3000, 'success');
             setTimeout(() => {
               window.location.href = "/cost/list";
-            }, 3000);
+            }, 1200);
         })
         .catch(error => {
             hideLoading();
             console.error(error);
-            toast('Error', 'Error updating cost', true, 5000);
+            toast(T('error'), T('period_save_failed'), true, 5000, 'error');
         });
     });
 });

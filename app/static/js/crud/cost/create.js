@@ -23,15 +23,15 @@ $(document).ready(function(){
         .then(response => response.json())
         .then(data => {
             hideLoading();
-            toast('Success', `Cost created with ID ${data.id}`, true, 3000);
+            toast(T('success'), T('period_saved', { id: data.id }), true, 3000, 'success');
             setTimeout(() => {
               window.location.href = "/cost/list";
-            }, 3000);
+            }, 1200);
         })
         .catch(error => {
             hideLoading();
             console.error(error);
-            toast('Error', 'Error creating cost', true, 5000);
+            toast(T('error'), T('period_save_failed'), true, 5000, 'error');
         });
     });
 });

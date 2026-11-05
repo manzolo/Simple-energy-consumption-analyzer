@@ -1,8 +1,8 @@
 // Readings list: loads every row once, filters client-side, shows decimals as stored.
-const LOCALE = navigator.language || 'it-IT';
+const LOCALE = window.LOCALE || 'it-IT';
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const monthName = (m, style = 'long') => cap(new Intl.DateTimeFormat(LOCALE, { month: style }).format(new Date(2000, m - 1, 1)));
-const fmt = (n, d = 2) => Number(n || 0).toLocaleString('it-IT', { maximumFractionDigits: d, useGrouping: 'always' });
+const fmt = (n, d = 2) => Number(n || 0).toLocaleString(LOCALE, { maximumFractionDigits: d, useGrouping: 'always' });
 let allData = [];
 
 function renderData(c) {
@@ -11,8 +11,8 @@ function renderData(c) {
       <td class="text-end"><strong>${fmt(c.kwh)}</strong><span class="em-unit">kWh</span></td>
       <td class="text-end"><strong>${fmt(c.smc)}</strong><span class="em-unit">Smc</span></td>
       <td class="text-end text-nowrap">
-        <button class="btn-icon" onclick="editConsumption(${c.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-        <button class="btn-icon danger" onclick="deleteConsumption(${c.id})" title="Delete"><i class="bi bi-trash"></i></button>
+        <button class="btn-icon" onclick="editConsumption(${c.id})" title="${T('edit')}"><i class="bi bi-pencil"></i></button>
+        <button class="btn-icon danger" onclick="deleteConsumption(${c.id})" title="${T('delete')}"><i class="bi bi-trash"></i></button>
       </td>
     </tr>`;
 }
@@ -36,11 +36,11 @@ function applyFilters() {
   });
   const tb = $('#table-body').empty();
   if (!rows.length) {
-    tb.append('<tr><td colspan="4" class="em-empty"><i class="bi bi-inbox"></i> No readings found</td></tr>');
+    tb.append(`<tr><td colspan="4" class="em-empty"><i class="bi bi-inbox"></i> ${T('no_readings_found')}</td></tr>`);
   } else {
     tb.append(rows.map(renderData).join(''));
   }
-  $('#recordInfo').text(`${rows.length} of ${allData.length} readings`);
+  $('#recordInfo').text(T('n_of_m_readings', { a: rows.length, b: allData.length }));
   updateStats(rows);
 }
 
@@ -56,7 +56,7 @@ function exportConsumption() { window.location.href = '/consumption/export'; }
 function deleteConsumption(id) {
   const row = allData.find((r) => r.id === id);
   const label = row ? `${monthName(row.month)} ${row.year}` : `#${id}`;
-  if (!confirm(`Delete the reading for ${label}?\n\nThis cannot be undone.`)) return;
+  if (!confirm(T('confirm_delete_reading', { m: label }))) return;
   showLoading();
   fetch(`/consumption/${id}`, { method: 'DELETE' })
     .then((r) => r.json())
@@ -64,9 +64,9 @@ function deleteConsumption(id) {
       hideLoading();
       allData = allData.filter((r) => r.id !== id);
       applyFilters();
-      toast('Success', `Reading for ${label} deleted`);
+      toast(T('success'), T('reading_deleted', { m: label }), true, 5000, 'success');
     })
-    .catch((e) => { hideLoading(); console.error(e); toast('Error', 'Failed to delete the reading'); });
+    .catch((e) => { hideLoading(); console.error(e); toast(T('error'), T('delete_failed'), true, 5000, 'error'); });
 }
 
 $(function () {
@@ -81,5 +81,5 @@ $(function () {
         .forEach((y) => $('#yearFilter').append(`<option value="${y}">${y}</option>`));
       applyFilters();
     })
-    .catch((e) => { console.error(e); toast('Error', 'Failed to load data'); });
+    .catch((e) => { console.error(e); toast(T('error'), T('load_failed'), true, 5000, 'error'); });
 });

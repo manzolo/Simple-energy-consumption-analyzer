@@ -97,6 +97,16 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4):
         'kwh': {str(yr): [_r(by_ym[(yr, m)]['kwh']) if (yr, m) in by_ym else None for m in range(1, 13)] for yr in chart_years},
         'smc': {str(yr): [_r(by_ym[(yr, m)]['smc']) if (yr, m) in by_ym else None for m in range(1, 13)] for yr in chart_years},
     }
+    # Price and installment in force for each recorded month (as the old detail charts did)
+    for key, field, nd in (('kwh_cost', 'kwh_cost', 4), ('smc_cost', 'smc_cost', 4), ('kwh_bill', 'kwh', 2), ('smc_bill', 'smc', 2)):
+        series = {}
+        for yr in chart_years:
+            vals = []
+            for m in range(1, 13):
+                c = cost_for_month(costs, yr, m, today) if (yr, m) in by_ym else None
+                vals.append(_r(c[field], nd) if c and c[field] is not None else None)
+            series[str(yr)] = vals
+        out['monthly'][key] = series
 
     out['prices'] = [{'start': c['start'].isoformat(), 'end': c['end'].isoformat() if c['end'] else None,
                       'kwh': _r(c['kwh']), 'smc': _r(c['smc']),

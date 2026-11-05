@@ -215,3 +215,13 @@ body {
 
 .em-footer { color: var(--em-muted); font-size: .825rem; border-top: 1px solid var(--em-border); padding: 1.25rem 0; margin-top: 3rem; }
 .em-empty { text-align: center; color: var(--em-muted); padding: 3rem 1rem; }
+
+/* ---------- Language switch ---------- */
+.em-lang { display: inline-flex; border: 1px solid var(--em-border); border-radius: 9px; overflow: hidden; flex: none; }
+.em-lang a { padding: .3rem .55rem; font-size: .75rem; font-weight: 650; letter-spacing: .03em; color: var(--em-muted); text-decoration: none; }
+.em-lang a:hover { color: var(--em-text); background: var(--em-surface-2); }
+.em-lang a.active { color: var(--em-text); background: var(--em-surface-2); }
+
+/* ---------- Year series (validated categorical: blue, orange, aqua, yellow) ---------- */
+:root { --em-y0: #2a78d6; --em-y1: #eb6834; --em-y2: #1baf7a; --em-y3: #eda100; }
+[data-bs-theme="dark"] { --em-y0: #3987e5; --em-y1: #d95926; --em-y2: #199e70; --em-y3: #c98500; }

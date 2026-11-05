@@ -61,6 +61,13 @@ class Dashboard(unittest.TestCase):
         self.assertIsNone(k[1])
         self.assertEqual(k[0], 304)
 
+    def test_monthly_price_and_installment_follow_the_period(self):
+        M = self.d['monthly']
+        self.assertEqual(M['kwh_bill']['2026'][8], 102.97)    # Sep 2026 → period 2025-10-31..2026-10-30
+        self.assertEqual(M['smc_cost']['2025'][9], 0.49)      # Oct 2025 (1st) → period ending 2025-10-30
+        self.assertEqual(M['kwh_cost']['2025'][10], None)     # Nov 2025 has no reading here
+        self.assertIsNone(M['smc_bill']['2026'][1])           # Feb 2026: no reading
+
     def test_empty(self):
         d = build_dashboard([], [], today=TODAY)
         self.assertIsNone(d['last'])

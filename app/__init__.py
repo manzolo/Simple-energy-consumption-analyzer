@@ -15,19 +15,13 @@ bootstrap = Bootstrap5()
 babel = Babel()
 
 def get_locale():
-    """
-    Determina il locale in base a:
-    1. Parametro URL (?lang=it o ?lang=en)
-    2. Header Accept-Language del browser
-    3. Default: italiano
-    """
-    # Controlla se c'è un parametro lang nell'URL
+    """?lang=it|en, then the 'lang' cookie, then Italian."""
+    from .i18n import LANGS, DEFAULT
     lang = request.args.get('lang')
-    if lang in ['it', 'en']:
+    if lang in LANGS:
         return lang
-    
-    # Altrimenti usa la lingua del browser
-    return request.accept_languages.best_match(['it', 'en']) or 'it'
+    lang = request.cookies.get('lang')
+    return lang if lang in LANGS else DEFAULT
 
 def create_app():
     app = Flask(__name__)
@@ -46,6 +40,25 @@ def create_app():
     migrate.init_app(app, db)
     bootstrap.init_app(app)  # Inizializza Bootstrap
     babel.init_app(app, locale_selector=get_locale)
+
+    from .i18n import table
+
+    @app.context_processor
+    def inject_i18n():
+        lang = get_locale()
+        strings = table(lang)
+
+        def t(key, **kw):
+            text = strings.get(key, key)
+            return text.format(**kw) if kw else text
+        return {'lang': lang, 't': t, 'i18n_strings': strings}
+
+    @app.after_request
+    def remember_lang(resp):
+        lang = request.args.get('lang')
+        if lang in ('it', 'en'):
+            resp.set_cookie('lang', lang, max_age=3600 * 24 * 365, samesite='Lax')
+        return resp
 
     # Importa i modelli
     from . import models

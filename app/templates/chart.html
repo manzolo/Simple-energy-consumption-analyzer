@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
-{% block title %}Overview · Energy Monitor{% endblock %}
+{% block title %}{{ t('overview_title') }} · {{ t('app_name') }}{% endblock %}
 
 {% block content %}
 <script id="dash-data" type="application/json">{{ dashboard | tojson }}</script>
 
 <div class="em-page-head">
     <div>
-        <h1>Overview</h1>
+        <h1>{{ t('overview_title') }}</h1>
         <p class="em-sub" id="lastLabel">&nbsp;</p>
     </div>
     <div class="em-actions">
-        <a href="/consumption/export" class="btn btn-ghost"><i class="bi bi-download"></i> Export</a>
-        <a href="/consumption/create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add reading</a>
+        <a href="/consumption/export" class="btn btn-ghost"><i class="bi bi-download"></i> {{ t('export') }}</a>
+        <a href="/consumption/create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> {{ t('add_reading') }}</a>
     </div>
 </div>
 
@@ -23,34 +23,34 @@
 </div>
 
 <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
-    <h2 class="h6 fw-semibold mb-0">Month by month</h2>
-    <div class="em-seg ms-auto" id="chartMode" role="group" aria-label="Chart style">
-        <button type="button" data-mode="line" class="active"><i class="bi bi-graph-up"></i> Lines</button>
-        <button type="button" data-mode="bar"><i class="bi bi-bar-chart"></i> Bars</button>
+    <h2 class="h6 fw-semibold mb-0">{{ t('month_by_month') }}</h2>
+    <div class="em-seg ms-auto" id="chartMode" role="group">
+        <button type="button" data-mode="line" class="active"><i class="bi bi-graph-up"></i> {{ t('lines') }}</button>
+        <button type="button" data-mode="bar"><i class="bi bi-bar-chart"></i> {{ t('bars') }}</button>
     </div>
 </div>
 <div class="row g-3 mb-4">
     <div class="col-12 col-lg-6">
         <div class="em-card">
-            <h3 class="em-card-title"><span class="em-dot smc"></span> Gas <span class="em-hint">Smc per month</span></h3>
+            <h3 class="em-card-title"><i class="bi bi-fire" style="color: var(--em-smc)"></i> {{ t('gas') }} <span class="em-hint">{{ t('smc_per_month') }}</span></h3>
             <div class="em-chart"><canvas id="smcChart"></canvas></div>
         </div>
     </div>
     <div class="col-12 col-lg-6">
         <div class="em-card">
-            <h3 class="em-card-title"><span class="em-dot kwh"></span> Electricity <span class="em-hint">kWh per month</span></h3>
+            <h3 class="em-card-title"><i class="bi bi-lightning-charge-fill" style="color: var(--em-kwh)"></i> {{ t('electricity') }} <span class="em-hint">{{ t('kwh_per_month') }}</span></h3>
             <div class="em-chart"><canvas id="kwhChart"></canvas></div>
         </div>
     </div>
 </div>
 
-<div class="row g-3">
+<div class="row g-3 mb-4">
     <div class="col-12 col-lg-7">
         <div class="em-card">
-            <h3 class="em-card-title"><i class="bi bi-calendar3"></i> Year by year <span class="em-hint">cost = monthly installments</span></h3>
+            <h3 class="em-card-title"><i class="bi bi-calendar3"></i> {{ t('year_by_year') }} <span class="em-hint">{{ t('cost_hint') }}</span></h3>
             <div class="table-responsive">
                 <table class="em-years num" id="yearsTable">
-                    <thead><tr><th>Year</th><th>Electricity</th><th>Gas</th><th class="r">Cost</th></tr></thead>
+                    <thead><tr><th>{{ t('year') }}</th><th>{{ t('electricity') }}</th><th>{{ t('gas') }}</th><th class="r">{{ t('cost') }}</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -58,9 +58,43 @@
     </div>
     <div class="col-12 col-lg-5">
         <div class="em-card">
-            <h3 class="em-card-title"><i class="bi bi-tag"></i> Unit prices <a class="em-hint" href="/cost/list">all periods →</a></h3>
+            <h3 class="em-card-title"><i class="bi bi-bar-chart-line"></i> {{ t('yearly_totals') }}</h3>
+            <div class="small text-muted mb-1"><span class="em-dot kwh"></span> kWh</div>
+            <div class="em-chart sm mb-3"><canvas id="kwhYearChart"></canvas></div>
+            <div class="small text-muted mb-1"><span class="em-dot smc"></span> Smc</div>
+            <div class="em-chart sm"><canvas id="smcYearChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<h2 class="h6 fw-semibold mb-3">{{ t('details') }}</h2>
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-6"><div class="em-card">
+        <h3 class="em-card-title"><span class="em-dot kwh"></span> {{ t('kwh_unit_cost') }}</h3>
+        <div class="em-chart sm"><canvas id="kwhCostChart"></canvas></div>
+    </div></div>
+    <div class="col-12 col-lg-6"><div class="em-card">
+        <h3 class="em-card-title"><span class="em-dot smc"></span> {{ t('smc_unit_cost') }}</h3>
+        <div class="em-chart sm"><canvas id="smcCostChart"></canvas></div>
+    </div></div>
+    <div class="col-12 col-lg-6"><div class="em-card">
+        <h3 class="em-card-title"><span class="em-dot kwh"></span> {{ t('kwh_bill') }}</h3>
+        <div class="em-chart sm"><canvas id="kwhBillChart"></canvas></div>
+    </div></div>
+    <div class="col-12 col-lg-6"><div class="em-card">
+        <h3 class="em-card-title"><span class="em-dot smc"></span> {{ t('smc_bill') }}</h3>
+        <div class="em-chart sm"><canvas id="smcBillChart"></canvas></div>
+    </div></div>
+</div>
+
+<div class="em-card">
+    <h3 class="em-card-title"><i class="bi bi-tag"></i> {{ t('unit_prices') }} <a class="em-hint" href="/cost/list">{{ t('all_periods') }}</a></h3>
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
             <div class="small text-muted mb-1"><span class="em-dot kwh"></span> €/kWh</div>
-            <div class="em-chart sm mb-3"><canvas id="kwhPriceChart"></canvas></div>
+            <div class="em-chart sm"><canvas id="kwhPriceChart"></canvas></div>
+        </div>
+        <div class="col-12 col-md-6">
             <div class="small text-muted mb-1"><span class="em-dot smc"></span> €/Smc</div>
             <div class="em-chart sm"><canvas id="smcPriceChart"></canvas></div>
         </div>

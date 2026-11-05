@@ -23,15 +23,15 @@ $(document).ready(function(){
         })
         .then(response => response.json())
         .then(data => {
-            toast(`Success`,`Consumption create with ID ${data.id}`)
+            toast(T('success'), T('reading_saved', { id: data.id }), true, 3000, 'success')
             // Wait for 3 seconds (3000 milliseconds)
             setTimeout(() => {
               window.location.href = "/consumption/list";
-            }, 3000);
+            }, 1200);
         })
         .catch(error => {
             console.error(error);
-            toast(`Error`,`Error creating consumption`)
+            toast(T('error'), T('reading_save_failed'), true, 5000, 'error')
         });
     });
 });

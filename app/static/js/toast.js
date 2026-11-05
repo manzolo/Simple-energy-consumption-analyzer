@@ -14,8 +14,8 @@ function toast(title, message, autohide = true, delay = 5000, type = 'info') {
     // Detect type from title if not specified
     if (type === 'info') {
         const lowerTitle = title.toLowerCase();
-        if (lowerTitle.includes('success')) type = 'success';
-        else if (lowerTitle.includes('error') || lowerTitle.includes('fail')) type = 'error';
+        if (lowerTitle.includes('success') || lowerTitle.includes('fatto')) type = 'success';
+        else if (lowerTitle.includes('error') || lowerTitle.includes('fail') || lowerTitle.includes('errore')) type = 'error';
         else if (lowerTitle.includes('warning')) type = 'warning';
     }
     
