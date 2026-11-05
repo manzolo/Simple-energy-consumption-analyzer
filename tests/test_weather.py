@@ -60,6 +60,16 @@ class DashboardWithWeather(unittest.TestCase):
         self.assertEqual(s[0]['hdd'], 3 * 400 + 4 * 500)
         self.assertEqual(s[0]['smc_per_hdd'], round(780 / 3200, 3))
 
+    def test_season_months_include_partial_seasons(self):
+        sm = {s['label']: s for s in self.d['season_months']}
+        self.assertEqual(list(sm), ['2023/24', '2024/25', '2025/26'])
+        self.assertFalse(sm['2023/24']['complete'])                      # Oct–Dec 2023 not read
+        self.assertTrue(sm['2024/25']['complete'])
+        self.assertEqual([(c['year'], c['month']) for c in sm['2024/25']['months']][:4], [(2024, 10), (2024, 11), (2024, 12), (2025, 1)])
+        self.assertEqual(sm['2024/25']['months'][3]['smc'], 120)
+        self.assertEqual(sm['2025/26']['months'][2]['hdd'], None)        # Dec 2025 weather incomplete
+        self.assertIsNone(sm['2025/26']['months'][3]['smc'])              # Jan 2026 not read yet
+
     def test_weather_off(self):
         d = build_dashboard([{'year': 2025, 'month': 1, 'kwh': 1, 'smc': 1}], [], today=date(2026, 1, 1))
         self.assertFalse(d['weather'])

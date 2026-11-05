@@ -237,3 +237,5 @@ body {
 [data-bs-theme="dark"] { --em-cold: #94a3b8; }
 
 .em-headline { font-size: 1.15rem; font-weight: 620; letter-spacing: -.01em; margin: 0 0 .35rem; line-height: 1.35; }
+
+#coldTable td { white-space: nowrap; }

@@ -35,7 +35,7 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4, hdd=None)
     rows = sorted(consumptions, key=lambda r: (r['year'], r['month']))
     by_ym = {(r['year'], r['month']): r for r in rows}
     out = {'last': None, 'ytd': None, 'rate': None, 'years': [], 'monthly': None, 'prices': [], 'yoy': {}, 'rolling': [],
-           'weather': bool(hdd), 'seasons': []}
+           'weather': bool(hdd), 'seasons': [], 'season_months': []}
     hdd = hdd or {}
     gg = lambda y, m: hdd[(y, m)]['hdd'] if (y, m) in hdd and hdd[(y, m)]['complete'] else None
     if not rows:
@@ -159,9 +159,24 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4, hdd=None)
                 smc = sum(by_ym[ym]['smc'] for ym in months)
                 deg = sum(gg(*ym) for ym in months)
                 out['seasons'].append({'label': f'{end_year - 1}/{str(end_year)[2:]}', 'end_year': end_year,
-                                       'smc': _r(smc), 'hdd': _r(deg, 0), 'smc_per_hdd': _r(smc / deg, 3) if deg else None})
+                                       'smc': _r(smc), 'hdd': _r(deg, 0), 'smc_per_hdd': _r(smc / deg, 3) if deg else None,
+                                       '_raw': smc / deg if deg else None})
         for prev, cur in zip(out['seasons'], out['seasons'][1:]):
-            cur['pct'] = _pct(cur['smc_per_hdd'], prev['smc_per_hdd'])
+            cur['pct'] = _pct(cur['_raw'], prev['_raw'])      # from unrounded values
+        for s in out['seasons']:
+            s.pop('_raw')
+
+        # Every season (also the one in progress), month by month Oct → Apr, for the season-vs-season view
+        years = {r['year'] for r in rows}
+        for end_year in range(min(years), max(years) + 2):
+            months = [(end_year - 1, m) for m in (10, 11, 12)] + [(end_year, m) for m in (1, 2, 3, 4)]
+            cells = [{'year': y, 'month': m,
+                      'smc': _r(by_ym[(y, m)]['smc']) if (y, m) in by_ym else None,
+                      'hdd': gg(y, m)} for y, m in months]
+            if any(c['smc'] is not None for c in cells):
+                out['season_months'].append({'label': f'{end_year - 1}/{str(end_year)[2:]}', 'end_year': end_year,
+                                             'complete': all(c['smc'] is not None and c['hdd'] is not None for c in cells),
+                                             'months': cells})
 
     out['prices'] = [{'start': c['start'].isoformat(), 'end': c['end'].isoformat() if c['end'] else None,
                       'kwh': _r(c['kwh']), 'smc': _r(c['smc']),

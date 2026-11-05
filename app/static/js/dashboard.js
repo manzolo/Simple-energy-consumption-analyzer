@@ -181,12 +181,18 @@
     });
   }
 
-  // Gas vs cold: % change of gas next to % change of degree days, heating months only (≥ 30 degree days).
+  // Gas vs cold, season by season (Oct → Apr): gas per degree day compared with the same month of the
+  // previous season. Heating months only (≥ 30 degree days in both).
   const MIN_HDD = 30;
-  const coldYears = yoyYears.filter((y) => D.yoy[String(y)].hdd && D.yoy[String(y)].hdd.cur.some((v, i) => v != null && D.yoy[String(y)].hdd.prev[i] != null));
-  let coldYear = coldYears[0] ?? null;
+  const SM = D.season_months || [];
+  const comparable = (cur, prev) => cur.months.map((c, i) => {
+    const p = prev.months[i];
+    return c.smc != null && p.smc != null && c.hdd != null && p.hdd != null && c.hdd >= MIN_HDD && p.hdd >= MIN_HDD && p.smc > 0;
+  });
+  const coldSeasons = SM.map((s, i) => i > 0 && comparable(s, SM[i - 1]).some(Boolean) ? i : -1).filter((i) => i >= 0).reverse();
+  let coldIdx = coldSeasons[0] ?? null;
 
-  function pctStr(p) { return p == null ? '–' : `${p > 0 ? '+' : ''}${num(p, 1)}%`; }
+  function pctStr(p) { if (p == null) return '–'; if (Math.abs(p) < 0.05) return '0%'; return `${p > 0 ? '+' : ''}${num(p, 1)}%`; }
 
   function drawCold() {
     const id = 'coldChart';
@@ -195,38 +201,38 @@
     const head = document.getElementById('coldHeadline'), out = document.getElementById('coldSummary');
     const tb = document.querySelector('#coldTable tbody');
     tb.innerHTML = ''; head.textContent = ''; out.textContent = '';
-    if (coldYear == null) { out.textContent = T('no_cold_months'); return; }
-    const G = D.yoy[String(coldYear)].smc, H = D.yoy[String(coldYear)].hdd;
-    const ok = (i) => G.cur[i] != null && G.prev[i] != null && H.cur[i] != null && H.prev[i] != null && H.prev[i] >= MIN_HDD && H.cur[i] >= MIN_HDD && G.prev[i] > 0;
-    // Gas per degree day this year vs the same month last year, in %
-    const norm = G.cur.map((_, i) => ok(i) ? Math.round(((G.cur[i] / H.cur[i]) / (G.prev[i] / H.prev[i]) - 1) * 1000) / 10 : null);
-    const idx = norm.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
-    if (!idx.length) { out.textContent = T('no_cold_months'); return; }
-
-    const sum = (a) => idx.reduce((s, i) => s + a[i], 0);
-    const gC = sum(G.cur), gP = sum(G.prev), hC = sum(H.cur), hP = sum(H.prev);
+    if (coldIdx == null) { out.textContent = T('no_cold_months'); return; }
+    const cur = SM[coldIdx], prev = SM[coldIdx - 1];
+    const ok = comparable(cur, prev);
     const r1 = (x) => Math.round(x * 10) / 10;
+    const norm = cur.months.map((c, i) => ok[i] ? r1(((c.smc / c.hdd) / (prev.months[i].smc / prev.months[i].hdd) - 1) * 100) : null);
+    const idx = norm.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
+
+    const sum = (S, k) => idx.reduce((t, i) => t + S.months[i][k], 0);
+    const gC = sum(cur, 'smc'), gP = sum(prev, 'smc'), hC = sum(cur, 'hdd'), hP = sum(prev, 'hdd');
     const gp = r1((gC - gP) / gP * 100), hp = r1((hC - hP) / hP * 100), np = r1(((gC / hC) / (gP / hP) - 1) * 100);
     const absPct = `${num(Math.abs(np), 1)}%`;
-    head.innerHTML = Math.abs(np) < 1 ? T('cold_headline_same', { y: coldYear, p: coldYear - 1 })
-      : T(np > 0 ? 'cold_headline_more' : 'cold_headline_less', { y: coldYear, p: coldYear - 1, n: `<span class="${np > 0 ? 'em-bad' : 'em-good'}">${absPct}</span>` });
-    out.textContent = T('cold_context', { c: hp >= 0 ? T('cold_colder') : T('cold_milder'), g: pctStr(gp), h: pctStr(hp) });
+    const names = { y: cur.label, p: prev.label };
+    head.innerHTML = Math.abs(np) < 1 ? T('cold_headline_same', names)
+      : T(np > 0 ? 'cold_headline_more' : 'cold_headline_less', { ...names, n: `<span class="${np > 0 ? 'em-bad' : 'em-good'}">${absPct}</span>` });
+    out.textContent = T('cold_context', { c: Math.abs(hp) < 1 ? T('cold_similar') : (hp > 0 ? T('cold_colder') : T('cold_milder')), g: pctStr(gp), h: pctStr(hp) })
+      + (cur.complete ? '' : ' · ' + T('season_partial', { n: idx.map((i) => monthName(cur.months[i].month, 'short')).join(', ') }));
 
     const good = css('--em-good'), bad = css('--em-bad');
     const colors = norm.map((v) => v == null ? 'transparent' : (v <= 0 ? good : bad));
     charts[id] = new Chart(document.getElementById(id), {
       type: 'bar',
-      data: { labels: Array.from({ length: 12 }, (_, i) => monthName(i + 1, 'short')),
-              datasets: [{ data: norm, backgroundColor: colors, hoverBackgroundColor: colors, borderRadius: 4, barPercentage: 0.7 }] },
+      data: { labels: cur.months.map((c) => monthName(c.month, 'short')),
+              datasets: [{ data: norm, backgroundColor: colors, hoverBackgroundColor: colors, borderRadius: 4, barPercentage: 0.6 }] },
       options: {
         responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
         plugins: { colors: { enabled: false }, legend: { display: false }, tooltip: { callbacks: {
-          title: (it) => it.length ? `${monthName(it[0].dataIndex + 1)} ${coldYear}` : '',
+          title: (it) => { const c = cur.months[it[0].dataIndex]; return `${monthName(c.month)} ${c.year}`; },
           label: (c) => {
-            const i = c.dataIndex;
+            const i = c.dataIndex, a = cur.months[i], b = prev.months[i];
             return [` ${T('cold_col_verdict')}: ${pctStr(norm[i])}`,
-                    ` ${T('gas')}: ${num(G.cur[i])} Smc (${coldYear - 1}: ${num(G.prev[i])})`,
-                    ` ${T('degree_days')}: ${num(H.cur[i], 0)} (${coldYear - 1}: ${num(H.prev[i], 0)})`];
+                    ` ${T('gas')}: ${num(a.smc)} Smc (${b.year}: ${num(b.smc)})`,
+                    ` ${T('degree_days')}: ${num(a.hdd, 0)} (${b.year}: ${num(b.hdd, 0)})`];
           },
         } } },
         scales: axes((v) => (v > 0 ? '+' : '') + num(v, 0) + '%', { yTicks: 5 }),
@@ -234,14 +240,15 @@
     });
 
     tb.innerHTML = idx.map((i) => {
-      const w = H.pct[i];
-      const weather = w == null || Math.abs(w) < 1 ? T('same_weather')
+      const a = cur.months[i], b = prev.months[i];
+      const w = r1((a.hdd - b.hdd) / b.hdd * 100), gpm = r1((a.smc - b.smc) / b.smc * 100);
+      const weather = Math.abs(w) < 1 ? T('same_weather')
         : (w > 0 ? `<i class="bi bi-snow2" style="color: var(--em-smc)"></i> ${T('colder_by', { p: `${num(w, 0)}%` })}`
                  : `<i class="bi bi-sun" style="color: var(--em-kwh)"></i> ${T('milder_by', { p: `${num(-w, 0)}%` })}`);
       return `<tr>
-        <td><strong>${monthName(i + 1)}</strong></td>
+        <td><strong>${monthName(a.month)}</strong> <span class="small text-muted">${a.year}</span></td>
         <td>${weather}</td>
-        <td class="r">${num(G.cur[i])} <span class="em-unit">Smc</span> <span class="small text-muted">(${pctStr(G.pct[i])})</span></td>
+        <td class="r">${num(a.smc)} <span class="em-unit">Smc</span> <span class="small text-muted">(${pctStr(gpm)})</span></td>
         <td class="r">${delta(norm[i], T('cold_col_verdict'))}</td>
       </tr>`;
     }).join('');
@@ -442,8 +449,8 @@
   document.querySelectorAll('#chartMode button').forEach((x) => x.classList.toggle('active', x.dataset.mode === mode));
   const coldSel = document.getElementById('coldYear');
   if (coldSel) {
-    coldSel.innerHTML = coldYears.map((y) => `<option value="${y}">${esc(T('yoy_vs', { y, p: y - 1 }))}</option>`).join('');
-    coldSel.addEventListener('change', () => { coldYear = Number(coldSel.value); drawCold(); });
+    coldSel.innerHTML = coldSeasons.map((i) => `<option value="${i}">${esc(T('season_vs', { y: SM[i].label, p: SM[i - 1].label }))}</option>`).join('');
+    coldSel.addEventListener('change', () => { coldIdx = Number(coldSel.value); drawCold(); });
   }
   const yoySel = document.getElementById('yoyYear');
   yoySel.innerHTML = yoyYears.map((y) => `<option value="${y}">${esc(T('yoy_vs', { y, p: y - 1 }))}</option>`).join('');
