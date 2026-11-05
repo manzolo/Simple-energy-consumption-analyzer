@@ -225,3 +225,9 @@ body {
 /* ---------- Year series (validated categorical: blue, orange, aqua, yellow) ---------- */
 :root { --em-y0: #2a78d6; --em-y1: #eb6834; --em-y2: #1baf7a; --em-y3: #eda100; }
 [data-bs-theme="dark"] { --em-y0: #3987e5; --em-y1: #d95926; --em-y2: #199e70; --em-y3: #c98500; }
+
+/* ---------- Year-over-year legend ---------- */
+.em-yoy-legend { display: flex; gap: 1.25rem; justify-content: center; font-size: .8rem; color: var(--em-muted); margin-top: .5rem; }
+.em-yoy-legend.d-none { display: none !important; }
+.em-good { color: var(--em-good); }
+.em-bad { color: var(--em-bad); }

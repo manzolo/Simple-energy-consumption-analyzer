@@ -24,10 +24,13 @@
 
 <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
     <h2 class="h6 fw-semibold mb-0">{{ t('month_by_month') }}</h2>
-    <span class="small text-muted d-none d-md-inline">{{ t('focus_hint') }}</span>
-    <div class="em-seg ms-auto" id="chartMode" role="group">
-        <button type="button" data-mode="bar" class="active"><i class="bi bi-bar-chart"></i> {{ t('bars') }}</button>
-        <button type="button" data-mode="line"><i class="bi bi-graph-up"></i> {{ t('lines') }}</button>
+    <span class="small text-muted d-none d-md-inline" id="modeHint">{{ t('focus_hint') }}</span>
+    <div class="ms-auto d-flex align-items-center gap-2">
+        <select class="form-select form-select-sm d-none" id="yoyYear" style="width: auto" aria-label="{{ t('year') }}"></select>
+        <div class="em-seg" id="chartMode" role="group">
+            <button type="button" data-mode="bar" class="active"><i class="bi bi-bar-chart"></i> {{ t('bars') }}</button>
+            <button type="button" data-mode="yoy"><i class="bi bi-plus-slash-minus"></i> {{ t('variation') }}</button>
+        </div>
     </div>
 </div>
 <div class="row g-3 mb-4">
@@ -35,12 +38,14 @@
         <div class="em-card">
             <h3 class="em-card-title"><i class="bi bi-fire" style="color: var(--em-smc)"></i> {{ t('gas') }} <span class="em-hint">{{ t('smc_per_month') }}</span></h3>
             <div class="em-chart"><canvas id="smcChart"></canvas></div>
+            <div class="em-yoy-legend d-none"><span><i class="bi bi-caret-down-fill em-good"></i> {{ t('yoy_less') }}</span><span><i class="bi bi-caret-up-fill em-bad"></i> {{ t('yoy_more') }}</span></div>
         </div>
     </div>
     <div class="col-12 col-lg-6">
         <div class="em-card">
             <h3 class="em-card-title"><i class="bi bi-lightning-charge-fill" style="color: var(--em-kwh)"></i> {{ t('electricity') }} <span class="em-hint">{{ t('kwh_per_month') }}</span></h3>
             <div class="em-chart"><canvas id="kwhChart"></canvas></div>
+            <div class="em-yoy-legend d-none"><span><i class="bi bi-caret-down-fill em-good"></i> {{ t('yoy_less') }}</span><span><i class="bi bi-caret-up-fill em-bad"></i> {{ t('yoy_more') }}</span></div>
         </div>
     </div>
 </div>
@@ -66,6 +71,21 @@
             <div class="em-chart sm"><canvas id="smcYearChart"></canvas></div>
         </div>
     </div>
+</div>
+
+<div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+    <h2 class="h6 fw-semibold mb-0">{{ t('rolling_title') }}</h2>
+    <span class="small text-muted">{{ t('rolling_hint') }}</span>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-6"><div class="em-card">
+        <h3 class="em-card-title"><i class="bi bi-fire" style="color: var(--em-smc)"></i> {{ t('gas') }} <span class="em-hint num" id="smcRollNow"></span></h3>
+        <div class="em-chart sm"><canvas id="smcRollChart"></canvas></div>
+    </div></div>
+    <div class="col-12 col-lg-6"><div class="em-card">
+        <h3 class="em-card-title"><i class="bi bi-lightning-charge-fill" style="color: var(--em-kwh)"></i> {{ t('electricity') }} <span class="em-hint num" id="kwhRollNow"></span></h3>
+        <div class="em-chart sm"><canvas id="kwhRollChart"></canvas></div>
+    </div></div>
 </div>
 
 <h2 class="h6 fw-semibold mb-3">{{ t('details') }}</h2>

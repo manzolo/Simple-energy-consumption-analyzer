@@ -68,6 +68,25 @@ class Dashboard(unittest.TestCase):
         self.assertEqual(M['kwh_cost']['2025'][10], None)     # Nov 2025 has no reading here
         self.assertIsNone(M['smc_bill']['2026'][1])           # Feb 2026: no reading
 
+    def test_yoy_change_per_month(self):
+        g = self.d['yoy']['2026']['smc']
+        self.assertEqual(g['diff'][8], -2.16)       # Sep: 10.84 − 13
+        self.assertEqual(g['pct'][8], -16.6)
+        self.assertEqual(g['diff'][7], -1.12)       # Aug: 7.88 − 9
+        self.assertIsNone(g['diff'][0])             # Jan 2025 missing → no change
+        self.assertEqual(g['cur'][0], 297)          # but the value is still there
+        self.assertEqual(self.d['yoy']['2026']['kwh']['diff'][8], -4)
+        self.assertNotIn('2025', self.d['yoy'])     # no 2024 months to compare with
+
+    def test_rolling_twelve_months_needs_a_full_window(self):
+        self.assertEqual(self.d['rolling'], [])     # the sample never has 12 months in a row
+        full = [{'year': 2025, 'month': m, 'kwh': 100, 'smc': 10} for m in range(1, 13)]
+        full += [{'year': 2026, 'month': 1, 'kwh': 130, 'smc': 40}, {'year': 2026, 'month': 3, 'kwh': 1, 'smc': 1}]
+        r = build_dashboard(full, [], today=TODAY)['rolling']
+        self.assertEqual([(x['year'], x['month']) for x in r], [(2025, 12), (2026, 1)])  # Mar 2026: Feb missing
+        self.assertEqual((r[0]['kwh'], r[0]['smc']), (1200, 120))
+        self.assertEqual((r[1]['kwh'], r[1]['smc']), (1230, 150))                         # Jan 2025 out, Jan 2026 in
+
     def test_empty(self):
         d = build_dashboard([], [], today=TODAY)
         self.assertIsNone(d['last'])

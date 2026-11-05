@@ -60,6 +60,17 @@ S = {
     'smc_bill': ('Rata gas (€/mese)', 'Gas installment (€/month)'),
     'now': ('oggi', 'now'),
     'in_progress': ('in corso', 'current'),
+    'variation': ('Variazione', 'Change'),
+    'yoy_vs': ('{y} rispetto al {p}', '{y} vs {p}'),
+    'yoy_less': ("meno dell'anno prima", 'less than the year before'),
+    'yoy_more': ("più dell'anno prima", 'more than the year before'),
+    'yoy_hint': ("ogni barra: il mese confrontato con lo stesso mese dell'anno prima", 'each bar: the month compared with the same month a year earlier'),
+    'rolling_title': ('Andamento a 12 mesi', '12-month trend'),
+    'rolling_hint': ('ogni punto = consumo dei 12 mesi precedenti, senza effetto stagioni', 'each point = the previous 12 months, no seasonal effect'),
+    'rolling_tip': ('12 mesi fino a {m}', '12 months to {m}'),
+    'rolling_now': ('ultimi 12 mesi: {v} {u}', 'last 12 months: {v} {u}'),
+    'rolling_vs': ("rispetto ai 12 mesi dell'anno prima", 'vs the 12 months a year earlier'),
+    'no_rolling': ('Servono 12 mesi di fila', 'Needs 12 months in a row'),
     'focus_hint': ('clic su una barra o su un anno della legenda per evidenziarlo ovunque', 'click a bar or a legend year to highlight it everywhere'),
 
     # readings

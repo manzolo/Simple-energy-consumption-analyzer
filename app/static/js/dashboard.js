@@ -75,7 +75,9 @@
 
   // ---------- Charts ----------
   let mode = 'bar';
-  try { const m = localStorage.getItem('em-chart-mode'); if (m === 'line' || m === 'bar') mode = m; } catch (e) {}
+  try { const m = localStorage.getItem('em-chart-mode'); if (m === 'yoy' || m === 'bar') mode = m; } catch (e) {}
+  const yoyYears = Object.keys(D.yoy || {}).map(Number).sort((a, b) => b - a);
+  let yoyYear = yoyYears[0] ?? null;
   const charts = {};
 
   function rgba(hex, a) {
@@ -127,6 +129,7 @@
 
   function restyleAll() {
     yearCharts.forEach((ch) => { styleYears(ch); ch.update(); });
+    if (mode === 'yoy') drawMain();
   }
 
   function yearAt(chart, evt) {
@@ -137,7 +140,66 @@
 
   function toggleFocus(yr) {
     focusYear = (yr == null || yr === focusYear) ? null : yr;
+    if (focusYear != null && yoyYears.includes(focusYear)) yoyYear = focusYear;
     restyleAll();
+  }
+
+  // Year-over-year: one bar per month = this year minus the same month a year earlier.
+  function drawYoy(id, key, unit) {
+    if (charts[id]) { yearCharts.delete(charts[id]); charts[id].destroy(); }
+    const E = yoyYear != null ? D.yoy[String(yoyYear)][key] : { diff: [], pct: [], cur: [], prev: [] };
+    const good = css('--em-good'), bad = css('--em-bad');
+    const colors = E.diff.map((v) => v == null ? 'transparent' : (v <= 0 ? good : bad));
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels: Array.from({ length: 12 }, (_, i) => monthName(i + 1, 'short')),
+              datasets: [{ data: E.diff, backgroundColor: colors, hoverBackgroundColor: colors, borderRadius: 4, barPercentage: 0.7 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+        plugins: {
+          colors: { enabled: false },
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: (it) => it.length ? monthName(it[0].dataIndex + 1) : '',
+            label: (c) => {
+              const i = c.dataIndex, d = E.diff[i];
+              if (d == null) return null;
+              const sign = d > 0 ? '+' : '', p = E.pct[i];
+              return [` ${yoyYear}: ${num(E.cur[i])} ${unit}`, ` ${yoyYear - 1}: ${num(E.prev[i])} ${unit}`,
+                      ` ${T('variation')}: ${sign}${num(d)} ${unit}${p != null ? ` (${sign}${num(p, 1)}%)` : ''}`];
+            },
+          } },
+        },
+        scales: axes((v) => (v > 0 ? '+' : '') + num(v, 0), {}),
+      },
+    });
+  }
+
+  // Rolling 12 months: one line through all the history; flat = stable, rising = consuming more.
+  function drawRolling(id, key, colorVar, unit, nowId) {
+    if (charts[id]) charts[id].destroy();
+    const R = D.rolling || [];
+    const el = document.getElementById(nowId);
+    if (!R.length) { el.textContent = T('no_rolling'); return; }
+    const color = css(colorVar);
+    const last = R[R.length - 1];
+    const yearAgo = R.find((r) => r.year === last.year - 1 && r.month === last.month);
+    const pct = yearAgo ? (last[key] - yearAgo[key]) / yearAgo[key] * 100 : null;
+    el.innerHTML = `${T('rolling_now', { v: num(last[key], 0), u: unit })} ${delta(pct != null ? Math.round(pct * 10) / 10 : null, T('rolling_vs'))}`;
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'line',
+      data: { labels: R.map((r) => `${monthName(r.month, 'short')} ${String(r.year).slice(2)}`),
+              datasets: [{ data: R.map((r) => r[key]), borderColor: color, backgroundColor: rgba(color, 0.1), fill: true, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5, pointBackgroundColor: color, tension: 0.25 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: { colors: { enabled: false }, legend: { display: false }, tooltip: { callbacks: {
+          title: (it) => { const r = R[it[0].dataIndex]; return T('rolling_tip', { m: `${monthName(r.month)} ${r.year}` }); },
+          label: (c) => ` ${num(c.parsed.y, 0)} ${unit}`,
+        } } },
+        scales: axes((v) => num(v, 0), { zero: false, x: { maxTicksLimit: 8 }, yTicks: 5 }),
+      },
+    });
   }
 
   function drawByYear(id, key, unit, digits, chartMode, extra = {}) {
@@ -232,18 +294,35 @@
   }
 
   function drawMain() {
-    drawByYear('smcChart', 'smc', 'Smc', 2, mode);
-    drawByYear('kwhChart', 'kwh', 'kWh', 2, mode);
-    drawByYear('kwhCostChart', 'kwh_cost', '€/kWh', 4, mode, { stepped: 'middle', zero: false, tickDigits: 2, yTicks: 4 });
-    drawByYear('smcCostChart', 'smc_cost', '€/Smc', 4, mode, { stepped: 'middle', zero: false, tickDigits: 2, yTicks: 4 });
-    drawByYear('kwhBillChart', 'kwh_bill', '', 2, mode, { money: true, yTicks: 4 });
-    drawByYear('smcBillChart', 'smc_bill', '', 2, mode, { money: true, yTicks: 4 });
+    const yoy = mode === 'yoy';
+    document.querySelectorAll('.em-yoy-legend').forEach((e) => e.classList.toggle('d-none', !yoy));
+    const sel = document.getElementById('yoyYear');
+    sel.classList.toggle('d-none', !yoy || !yoyYears.length);
+    sel.value = yoyYear;
+    document.getElementById('modeHint').textContent = yoy ? T('yoy_hint') : T('focus_hint');
+    if (yoy) {
+      drawYoy('smcChart', 'smc', 'Smc');
+      drawYoy('kwhChart', 'kwh', 'kWh');
+    } else {
+      drawByYear('smcChart', 'smc', 'Smc', 2, 'bar');
+      drawByYear('kwhChart', 'kwh', 'kWh', 2, 'bar');
+    }
+  }
+
+  function drawDetails() {
+    drawByYear('kwhCostChart', 'kwh_cost', '€/kWh', 4, 'bar', { tickDigits: 2, yTicks: 4 });
+    drawByYear('smcCostChart', 'smc_cost', '€/Smc', 4, 'bar', { tickDigits: 2, yTicks: 4 });
+    drawByYear('kwhBillChart', 'kwh_bill', '', 2, 'bar', { money: true, yTicks: 4 });
+    drawByYear('smcBillChart', 'smc_bill', '', 2, 'bar', { money: true, yTicks: 4 });
   }
 
   function drawAll() {
     if (typeof Chart === 'undefined') return;
     Chart.defaults.font.family = css('--em-font') || 'system-ui';
     drawMain();
+    drawDetails();
+    drawRolling('smcRollChart', 'smc', '--em-smc', 'Smc', 'smcRollNow');
+    drawRolling('kwhRollChart', 'kwh', '--em-kwh', 'kWh', 'kwhRollNow');
     drawYearTotals('kwhYearChart', 'kwh', '--em-kwh', 'kWh');
     drawYearTotals('smcYearChart', 'smc', '--em-smc', 'Smc');
     drawPrices('kwhPriceChart', 'kwh_cost', '--em-kwh', '€/kWh');
@@ -259,6 +338,9 @@
   document.addEventListener('em-theme', drawAll);
 
   document.querySelectorAll('#chartMode button').forEach((x) => x.classList.toggle('active', x.dataset.mode === mode));
+  const yoySel = document.getElementById('yoyYear');
+  yoySel.innerHTML = yoyYears.map((y) => `<option value="${y}">${esc(T('yoy_vs', { y, p: y - 1 }))}</option>`).join('');
+  yoySel.addEventListener('change', () => { yoyYear = Number(yoySel.value); drawMain(); });
   renderKpis();
   renderYears();
   drawAll();

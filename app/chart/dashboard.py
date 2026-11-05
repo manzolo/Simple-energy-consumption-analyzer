@@ -33,7 +33,7 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4):
     today = today or date.today()
     rows = sorted(consumptions, key=lambda r: (r['year'], r['month']))
     by_ym = {(r['year'], r['month']): r for r in rows}
-    out = {'last': None, 'ytd': None, 'rate': None, 'years': [], 'monthly': None, 'prices': []}
+    out = {'last': None, 'ytd': None, 'rate': None, 'years': [], 'monthly': None, 'prices': [], 'yoy': {}, 'rolling': []}
     if not rows:
         return out
 
@@ -107,6 +107,39 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4):
                 vals.append(_r(c[field], nd) if c and c[field] is not None else None)
             series[str(yr)] = vals
         out['monthly'][key] = series
+
+    # Year-over-year change per month: (this year − same month a year earlier), for every year that has one
+    out['yoy'] = {}
+    for yr in sorted({r['year'] for r in rows}):
+        if not any((yr - 1, m) in by_ym and (yr, m) in by_ym for m in range(1, 13)):
+            continue
+        entry = {}
+        for key in ('kwh', 'smc'):
+            diff, pct, cur, prev = [], [], [], []
+            for m in range(1, 13):
+                c, p = by_ym.get((yr, m)), by_ym.get((yr - 1, m))
+                if c and p:
+                    diff.append(_r(c[key] - p[key])); pct.append(_pct(c[key], p[key]))
+                    cur.append(_r(c[key])); prev.append(_r(p[key]))
+                else:
+                    diff.append(None); pct.append(None); cur.append(_r(c[key]) if c else None); prev.append(_r(p[key]) if p else None)
+            entry[key] = {'diff': diff, 'pct': pct, 'cur': cur, 'prev': prev}
+        out['yoy'][str(yr)] = entry
+
+    # Rolling 12 months: sum of the 12 months ending at each month, only when all 12 are recorded
+    out['rolling'] = []
+    for r in rows:
+        y, m = r['year'], r['month']
+        window = []
+        for k in range(12):
+            mm, yy = m - k, y
+            while mm < 1:
+                mm += 12; yy -= 1
+            window.append(by_ym.get((yy, mm)))
+        if all(window):
+            out['rolling'].append({'year': y, 'month': m,
+                                   'kwh': _r(sum(w['kwh'] for w in window)),
+                                   'smc': _r(sum(w['smc'] for w in window))})
 
     out['prices'] = [{'start': c['start'].isoformat(), 'end': c['end'].isoformat() if c['end'] else None,
                       'kwh': _r(c['kwh']), 'smc': _r(c['smc']),
