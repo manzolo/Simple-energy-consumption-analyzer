@@ -6,6 +6,7 @@ from app.models import Consumption, Cost
 from app.chart.kwh import getKwh, getKwhYear, getKwhUnitCost, getKwhMonthCost
 from app.chart.smc import getSmc, getSmcYear, getSmcUnitCost, getSmcMonthCost
 from app.chart.dashboard import build_dashboard
+from app.weather import monthly_hdd
 
 bp = Blueprint('home', __name__)
 
@@ -17,7 +18,9 @@ def index():
     costs = [{'start': c.start, 'end': c.end, 'kwh': c.kwh, 'smc': c.smc,
               'kwh_cost': c.kwh_cost, 'smc_cost': c.smc_cost}
              for c in Cost.query.all()]
-    return render_template('chart.html', dashboard=build_dashboard(consumptions, costs))
+    first_year = min((c['year'] for c in consumptions), default=datetime.now().year)
+    hdd = monthly_hdd(first_year)
+    return render_template('chart.html', dashboard=build_dashboard(consumptions, costs, hdd=hdd))
 
 
 @bp.route('/year')

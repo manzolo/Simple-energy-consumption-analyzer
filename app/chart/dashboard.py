@@ -29,11 +29,15 @@ def cost_for_month(costs, year, month, today):
     return best
 
 
-def build_dashboard(consumptions, costs, today=None, years_in_chart=4):
+def build_dashboard(consumptions, costs, today=None, years_in_chart=4, hdd=None):
+    """hdd: optional {(y, m): {'hdd', 'tmean', 'complete'}} from app.weather."""
     today = today or date.today()
     rows = sorted(consumptions, key=lambda r: (r['year'], r['month']))
     by_ym = {(r['year'], r['month']): r for r in rows}
-    out = {'last': None, 'ytd': None, 'rate': None, 'years': [], 'monthly': None, 'prices': [], 'yoy': {}, 'rolling': []}
+    out = {'last': None, 'ytd': None, 'rate': None, 'years': [], 'monthly': None, 'prices': [], 'yoy': {}, 'rolling': [],
+           'weather': bool(hdd), 'seasons': []}
+    hdd = hdd or {}
+    gg = lambda y, m: hdd[(y, m)]['hdd'] if (y, m) in hdd and hdd[(y, m)]['complete'] else None
     if not rows:
         return out
 
@@ -124,6 +128,12 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4):
                 else:
                     diff.append(None); pct.append(None); cur.append(_r(c[key]) if c else None); prev.append(_r(p[key]) if p else None)
             entry[key] = {'diff': diff, 'pct': pct, 'cur': cur, 'prev': prev}
+        if hdd:
+            hc = [gg(yr, m) for m in range(1, 13)]
+            hp = [gg(yr - 1, m) for m in range(1, 13)]
+            entry['hdd'] = {'cur': hc, 'prev': hp,
+                            'diff': [_r(c - p, 1) if c is not None and p is not None else None for c, p in zip(hc, hp)],
+                            'pct': [_pct(c, p) if c is not None and p is not None else None for c, p in zip(hc, hp)]}
         out['yoy'][str(yr)] = entry
 
     # Rolling 12 months: sum of the 12 months ending at each month, only when all 12 are recorded
@@ -140,6 +150,18 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4):
             out['rolling'].append({'year': y, 'month': m,
                                    'kwh': _r(sum(w['kwh'] for w in window)),
                                    'smc': _r(sum(w['smc'] for w in window))})
+
+    # Heating seasons (October → April): gas per degree day, only when all 7 months are known
+    if hdd:
+        for end_year in sorted({r['year'] for r in rows}):
+            months = [(end_year - 1, m) for m in (10, 11, 12)] + [(end_year, m) for m in (1, 2, 3, 4)]
+            if all(ym in by_ym and gg(*ym) is not None for ym in months):
+                smc = sum(by_ym[ym]['smc'] for ym in months)
+                deg = sum(gg(*ym) for ym in months)
+                out['seasons'].append({'label': f'{end_year - 1}/{str(end_year)[2:]}', 'end_year': end_year,
+                                       'smc': _r(smc), 'hdd': _r(deg, 0), 'smc_per_hdd': _r(smc / deg, 3) if deg else None})
+        for prev, cur in zip(out['seasons'], out['seasons'][1:]):
+            cur['pct'] = _pct(cur['smc_per_hdd'], prev['smc_per_hdd'])
 
     out['prices'] = [{'start': c['start'].isoformat(), 'end': c['end'].isoformat() if c['end'] else None,
                       'kwh': _r(c['kwh']), 'smc': _r(c['smc']),

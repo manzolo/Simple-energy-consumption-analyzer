@@ -9,6 +9,8 @@ services:
       - FLASK_ENV=${FLASK_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
+      - WEATHER_LAT=${WEATHER_LAT:-}
+      - WEATHER_LON=${WEATHER_LON:-}
     #volumes:
     #  - .:/app
     depends_on:

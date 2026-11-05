@@ -231,3 +231,7 @@ body {
 .em-yoy-legend.d-none { display: none !important; }
 .em-good { color: var(--em-good); }
 .em-bad { color: var(--em-bad); }
+
+/* Degree days: a neutral slate, distinct from the energy colors */
+:root { --em-cold: #64748b; }
+[data-bs-theme="dark"] { --em-cold: #94a3b8; }

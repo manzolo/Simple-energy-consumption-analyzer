@@ -165,12 +165,96 @@
               const i = c.dataIndex, d = E.diff[i];
               if (d == null) return null;
               const sign = d > 0 ? '+' : '', p = E.pct[i];
-              return [` ${yoyYear}: ${num(E.cur[i])} ${unit}`, ` ${yoyYear - 1}: ${num(E.prev[i])} ${unit}`,
+              const lines = [` ${yoyYear}: ${num(E.cur[i])} ${unit}`, ` ${yoyYear - 1}: ${num(E.prev[i])} ${unit}`,
                       ` ${T('variation')}: ${sign}${num(d)} ${unit}${p != null ? ` (${sign}${num(p, 1)}%)` : ''}`];
+              const H = key === 'smc' && D.yoy[String(yoyYear)].hdd;
+              if (H && H.cur[i] != null && H.prev[i] != null) {
+                const hp = H.pct[i];
+                lines.push(` ${T('degree_days')}: ${num(H.cur[i], 0)} / ${num(H.prev[i], 0)}${hp != null ? ` (${hp > 0 ? '+' : ''}${num(hp, 1)}%)` : ''}`);
+              }
+              return lines;
             },
           } },
         },
         scales: axes((v) => (v > 0 ? '+' : '') + num(v, 0), {}),
+      },
+    });
+  }
+
+  // Gas vs cold: % change of gas next to % change of degree days, heating months only (≥ 30 degree days).
+  const MIN_HDD = 30;
+  const coldYears = yoyYears.filter((y) => D.yoy[String(y)].hdd && D.yoy[String(y)].hdd.cur.some((v, i) => v != null && D.yoy[String(y)].hdd.prev[i] != null));
+  let coldYear = coldYears[0] ?? null;
+
+  function pctStr(p) { return p == null ? '–' : `${p > 0 ? '+' : ''}${num(p, 1)}%`; }
+
+  function drawCold() {
+    const id = 'coldChart';
+    if (!document.getElementById(id)) return;
+    if (charts[id]) charts[id].destroy();
+    const out = document.getElementById('coldSummary');
+    if (coldYear == null) { out.textContent = T('no_cold_months'); return; }
+    const G = D.yoy[String(coldYear)].smc, H = D.yoy[String(coldYear)].hdd;
+    const ok = (i) => G.cur[i] != null && G.prev[i] != null && H.cur[i] != null && H.prev[i] != null && H.prev[i] >= MIN_HDD && H.cur[i] >= MIN_HDD;
+    const gas = G.pct.map((v, i) => ok(i) ? v : null), deg = H.pct.map((v, i) => ok(i) ? v : null);
+    const idx = gas.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
+    if (!idx.length) { out.textContent = T('no_cold_months'); return; }
+    const sum = (a) => idx.reduce((s, i) => s + a[i], 0);
+    const gC = sum(G.cur), gP = sum(G.prev), hC = sum(H.cur), hP = sum(H.prev);
+    const gp = (gC - gP) / gP * 100, hp = (hC - hP) / hP * 100, np = ((gC / hC) / (gP / hP) - 1) * 100;
+    const verdict = `${pctStr(Math.round(np * 10) / 10)}`;
+    out.innerHTML = T('cold_summary', { y: coldYear, p: coldYear - 1, g: `<strong>${pctStr(Math.round(gp * 10) / 10)}</strong>`,
+      h: `<strong>${pctStr(Math.round(hp * 10) / 10)}</strong> (${hp >= 0 ? T('cold_colder') : T('cold_milder')})`,
+      n: delta(Math.round(np * 10) / 10, verdict) || verdict });
+    const smc = css('--em-smc'), cold = css('--em-cold');
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels: Array.from({ length: 12 }, (_, i) => monthName(i + 1, 'short')), datasets: [
+        { label: T('gas'), data: gas, backgroundColor: smc, hoverBackgroundColor: smc, borderRadius: 4 },
+        { label: T('degree_days'), data: deg, backgroundColor: cold, hoverBackgroundColor: cold, borderRadius: 4 },
+      ] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          colors: { enabled: false }, legend: legend(),
+          tooltip: { callbacks: {
+            title: (it) => it.length ? `${monthName(it[0].dataIndex + 1)} ${coldYear} / ${coldYear - 1}` : '',
+            label: (c) => {
+              const i = c.dataIndex;
+              if (c.parsed.y == null) return null;
+              return c.datasetIndex === 0
+                ? ` ${T('gas')}: ${num(G.cur[i])} / ${num(G.prev[i])} Smc (${pctStr(c.parsed.y)})`
+                : ` ${T('degree_days')}: ${num(H.cur[i], 0)} / ${num(H.prev[i], 0)} (${pctStr(c.parsed.y)})`;
+            },
+          } },
+        },
+        scales: axes((v) => (v > 0 ? '+' : '') + num(v, 0) + '%', { yTicks: 5 }),
+      },
+    });
+  }
+
+  function drawSeasons() {
+    const id = 'seasonChart';
+    if (!document.getElementById(id)) return;
+    if (charts[id]) charts[id].destroy();
+    const S = D.seasons || [];
+    if (!S.length) { document.getElementById(id).parentElement.innerHTML = `<div class="em-empty">${T('no_seasons')}</div>`; return; }
+    const smc = css('--em-smc');
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels: S.map((s) => s.label), datasets: [{ data: S.map((s) => s.smc_per_hdd), backgroundColor: smc, hoverBackgroundColor: smc, borderRadius: 4, barPercentage: 0.7 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+        plugins: { colors: { enabled: false }, legend: { display: false }, tooltip: { callbacks: {
+          label: (c) => {
+            const s = S[c.dataIndex];
+            const out = [` ${T('smc_per_hdd')}: ${num(s.smc_per_hdd, 3)}`, ` ${T('gas')}: ${num(s.smc, 0)} Smc`, ` ${T('degree_days')}: ${num(s.hdd, 0)}`];
+            if (s.pct != null) out.push(` ${pctStr(s.pct)} ${T('vs_prev_season')}`);
+            return out;
+          },
+        } } },
+        scales: axes((v) => num(v, 2), { yTicks: 4 }),
       },
     });
   }
@@ -321,6 +405,8 @@
     Chart.defaults.font.family = css('--em-font') || 'system-ui';
     drawMain();
     drawDetails();
+    drawCold();
+    drawSeasons();
     drawRolling('smcRollChart', 'smc', '--em-smc', 'Smc', 'smcRollNow');
     drawRolling('kwhRollChart', 'kwh', '--em-kwh', 'kWh', 'kwhRollNow');
     drawYearTotals('kwhYearChart', 'kwh', '--em-kwh', 'kWh');
@@ -338,6 +424,11 @@
   document.addEventListener('em-theme', drawAll);
 
   document.querySelectorAll('#chartMode button').forEach((x) => x.classList.toggle('active', x.dataset.mode === mode));
+  const coldSel = document.getElementById('coldYear');
+  if (coldSel) {
+    coldSel.innerHTML = coldYears.map((y) => `<option value="${y}">${esc(T('yoy_vs', { y, p: y - 1 }))}</option>`).join('');
+    coldSel.addEventListener('change', () => { coldYear = Number(coldSel.value); drawCold(); });
+  }
   const yoySel = document.getElementById('yoyYear');
   yoySel.innerHTML = yoyYears.map((y) => `<option value="${y}">${esc(T('yoy_vs', { y, p: y - 1 }))}</option>`).join('');
   yoySel.addEventListener('change', () => { yoyYear = Number(yoySel.value); drawMain(); });
