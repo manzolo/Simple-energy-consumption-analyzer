@@ -235,3 +235,5 @@ body {
 /* Degree days: a neutral slate, distinct from the energy colors */
 :root { --em-cold: #64748b; }
 [data-bs-theme="dark"] { --em-cold: #94a3b8; }
+
+.em-headline { font-size: 1.15rem; font-weight: 620; letter-spacing: -.01em; margin: 0 0 .35rem; line-height: 1.35; }

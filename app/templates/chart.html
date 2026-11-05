@@ -59,13 +59,23 @@
     <div class="col-12 col-lg-7"><div class="em-card">
         <h3 class="em-card-title"><i class="bi bi-thermometer-snow" style="color: var(--em-smc)"></i> {{ t('cold_vs') }}
             <select class="form-select form-select-sm ms-auto" id="coldYear" style="width: auto"></select></h3>
+        <p class="em-headline" id="coldHeadline"></p>
+        <p class="small text-muted" id="coldSummary"></p>
         <div class="em-chart sm"><canvas id="coldChart"></canvas></div>
-        <p class="small text-muted mt-3 mb-0" id="coldSummary"></p>
+        <div class="em-yoy-legend"><span><i class="bi bi-caret-down-fill em-good"></i> {{ t('cold_less') }}</span><span><i class="bi bi-caret-up-fill em-bad"></i> {{ t('cold_more') }}</span></div>
+        <div class="table-responsive mt-3">
+            <table class="em-years num" id="coldTable">
+                <thead><tr><th>{{ t('month') }}</th><th>{{ t('cold_col_weather') }}</th><th class="r">{{ t('cold_col_gas') }}</th><th class="r">{{ t('cold_col_verdict') }}</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle"></i> {{ t('cold_explain') }}</p>
     </div></div>
     <div class="col-12 col-lg-5"><div class="em-card">
         <h3 class="em-card-title"><i class="bi bi-fire" style="color: var(--em-smc)"></i> {{ t('per_hdd_title') }}</h3>
         <div class="small text-muted mb-2">{{ t('per_hdd_hint') }}</div>
-        <div class="em-chart sm"><canvas id="seasonChart"></canvas></div>
+        <div class="em-chart" style="height: 340px"><canvas id="seasonChart"></canvas></div>
+        <p class="small text-muted mt-3 mb-0" id="seasonLine"></p>
     </div></div>
 </div>
 {% endif %}

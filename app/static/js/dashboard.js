@@ -192,46 +192,59 @@
     const id = 'coldChart';
     if (!document.getElementById(id)) return;
     if (charts[id]) charts[id].destroy();
-    const out = document.getElementById('coldSummary');
+    const head = document.getElementById('coldHeadline'), out = document.getElementById('coldSummary');
+    const tb = document.querySelector('#coldTable tbody');
+    tb.innerHTML = ''; head.textContent = ''; out.textContent = '';
     if (coldYear == null) { out.textContent = T('no_cold_months'); return; }
     const G = D.yoy[String(coldYear)].smc, H = D.yoy[String(coldYear)].hdd;
-    const ok = (i) => G.cur[i] != null && G.prev[i] != null && H.cur[i] != null && H.prev[i] != null && H.prev[i] >= MIN_HDD && H.cur[i] >= MIN_HDD;
-    const gas = G.pct.map((v, i) => ok(i) ? v : null), deg = H.pct.map((v, i) => ok(i) ? v : null);
-    const idx = gas.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
+    const ok = (i) => G.cur[i] != null && G.prev[i] != null && H.cur[i] != null && H.prev[i] != null && H.prev[i] >= MIN_HDD && H.cur[i] >= MIN_HDD && G.prev[i] > 0;
+    // Gas per degree day this year vs the same month last year, in %
+    const norm = G.cur.map((_, i) => ok(i) ? Math.round(((G.cur[i] / H.cur[i]) / (G.prev[i] / H.prev[i]) - 1) * 1000) / 10 : null);
+    const idx = norm.map((v, i) => v != null ? i : -1).filter((i) => i >= 0);
     if (!idx.length) { out.textContent = T('no_cold_months'); return; }
+
     const sum = (a) => idx.reduce((s, i) => s + a[i], 0);
     const gC = sum(G.cur), gP = sum(G.prev), hC = sum(H.cur), hP = sum(H.prev);
-    const gp = (gC - gP) / gP * 100, hp = (hC - hP) / hP * 100, np = ((gC / hC) / (gP / hP) - 1) * 100;
-    const verdict = `${pctStr(Math.round(np * 10) / 10)}`;
-    out.innerHTML = T('cold_summary', { y: coldYear, p: coldYear - 1, g: `<strong>${pctStr(Math.round(gp * 10) / 10)}</strong>`,
-      h: `<strong>${pctStr(Math.round(hp * 10) / 10)}</strong> (${hp >= 0 ? T('cold_colder') : T('cold_milder')})`,
-      n: delta(Math.round(np * 10) / 10, verdict) || verdict });
-    const smc = css('--em-smc'), cold = css('--em-cold');
+    const r1 = (x) => Math.round(x * 10) / 10;
+    const gp = r1((gC - gP) / gP * 100), hp = r1((hC - hP) / hP * 100), np = r1(((gC / hC) / (gP / hP) - 1) * 100);
+    const absPct = `${num(Math.abs(np), 1)}%`;
+    head.innerHTML = Math.abs(np) < 1 ? T('cold_headline_same', { y: coldYear, p: coldYear - 1 })
+      : T(np > 0 ? 'cold_headline_more' : 'cold_headline_less', { y: coldYear, p: coldYear - 1, n: `<span class="${np > 0 ? 'em-bad' : 'em-good'}">${absPct}</span>` });
+    out.textContent = T('cold_context', { c: hp >= 0 ? T('cold_colder') : T('cold_milder'), g: pctStr(gp), h: pctStr(hp) });
+
+    const good = css('--em-good'), bad = css('--em-bad');
+    const colors = norm.map((v) => v == null ? 'transparent' : (v <= 0 ? good : bad));
     charts[id] = new Chart(document.getElementById(id), {
       type: 'bar',
-      data: { labels: Array.from({ length: 12 }, (_, i) => monthName(i + 1, 'short')), datasets: [
-        { label: T('gas'), data: gas, backgroundColor: smc, hoverBackgroundColor: smc, borderRadius: 4 },
-        { label: T('degree_days'), data: deg, backgroundColor: cold, hoverBackgroundColor: cold, borderRadius: 4 },
-      ] },
+      data: { labels: Array.from({ length: 12 }, (_, i) => monthName(i + 1, 'short')),
+              datasets: [{ data: norm, backgroundColor: colors, hoverBackgroundColor: colors, borderRadius: 4, barPercentage: 0.7 }] },
       options: {
         responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          colors: { enabled: false }, legend: legend(),
-          tooltip: { callbacks: {
-            title: (it) => it.length ? `${monthName(it[0].dataIndex + 1)} ${coldYear} / ${coldYear - 1}` : '',
-            label: (c) => {
-              const i = c.dataIndex;
-              if (c.parsed.y == null) return null;
-              return c.datasetIndex === 0
-                ? ` ${T('gas')}: ${num(G.cur[i])} / ${num(G.prev[i])} Smc (${pctStr(c.parsed.y)})`
-                : ` ${T('degree_days')}: ${num(H.cur[i], 0)} / ${num(H.prev[i], 0)} (${pctStr(c.parsed.y)})`;
-            },
-          } },
-        },
+        plugins: { colors: { enabled: false }, legend: { display: false }, tooltip: { callbacks: {
+          title: (it) => it.length ? `${monthName(it[0].dataIndex + 1)} ${coldYear}` : '',
+          label: (c) => {
+            const i = c.dataIndex;
+            return [` ${T('cold_col_verdict')}: ${pctStr(norm[i])}`,
+                    ` ${T('gas')}: ${num(G.cur[i])} Smc (${coldYear - 1}: ${num(G.prev[i])})`,
+                    ` ${T('degree_days')}: ${num(H.cur[i], 0)} (${coldYear - 1}: ${num(H.prev[i], 0)})`];
+          },
+        } } },
         scales: axes((v) => (v > 0 ? '+' : '') + num(v, 0) + '%', { yTicks: 5 }),
       },
     });
+
+    tb.innerHTML = idx.map((i) => {
+      const w = H.pct[i];
+      const weather = w == null || Math.abs(w) < 1 ? T('same_weather')
+        : (w > 0 ? `<i class="bi bi-snow2" style="color: var(--em-smc)"></i> ${T('colder_by', { p: `${num(w, 0)}%` })}`
+                 : `<i class="bi bi-sun" style="color: var(--em-kwh)"></i> ${T('milder_by', { p: `${num(-w, 0)}%` })}`);
+      return `<tr>
+        <td><strong>${monthName(i + 1)}</strong></td>
+        <td>${weather}</td>
+        <td class="r">${num(G.cur[i])} <span class="em-unit">Smc</span> <span class="small text-muted">(${pctStr(G.pct[i])})</span></td>
+        <td class="r">${delta(norm[i], T('cold_col_verdict'))}</td>
+      </tr>`;
+    }).join('');
   }
 
   function drawSeasons() {
@@ -240,6 +253,9 @@
     if (charts[id]) charts[id].destroy();
     const S = D.seasons || [];
     if (!S.length) { document.getElementById(id).parentElement.innerHTML = `<div class="em-empty">${T('no_seasons')}</div>`; return; }
+    const L = S[S.length - 1];
+    document.getElementById('seasonLine').innerHTML = T('season_line', { s: L.label, v: `<strong>${num(L.smc_per_hdd, 3)}</strong>`, g: num(L.smc, 0), h: num(L.hdd, 0) })
+      + (L.pct != null ? ' ' + T('season_line_vs', { d: delta(L.pct, T('vs_prev_season')) }) : '');
     const smc = css('--em-smc');
     charts[id] = new Chart(document.getElementById(id), {
       type: 'bar',
