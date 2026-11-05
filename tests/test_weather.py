@@ -59,6 +59,19 @@ class DashboardWithWeather(unittest.TestCase):
         self.assertEqual(s[0]['smc'], 3 * 100 + 4 * 120)
         self.assertEqual(s[0]['hdd'], 3 * 400 + 4 * 500)
         self.assertEqual(s[0]['smc_per_hdd'], round(780 / 3200, 3))
+        self.assertEqual(s[0]['normal_smc'], 780)                 # only one season: its cold is the average
+        self.assertEqual(s[0]['cold_pct'], 0)
+
+    def test_normal_winter_rescales_to_average_cold(self):
+        from app.chart.dashboard import build_dashboard as bd
+        cons = [{'year': y, 'month': m, 'kwh': 1, 'smc': 100} for y in (2023, 2024, 2025) for m in range(1, 13)]
+        # season 2023/24: 7 × 400 = 2800 degree days; season 2024/25: 7 × 200 = 1400 → average 2100
+        hdd = {(y, m): full(y, m, 400 if (y == 2023 and m >= 10) or (y == 2024 and m <= 4) else 200)
+               for y in (2023, 2024, 2025) for m in range(1, 13)}
+        s = {x['label']: x for x in bd(cons, [], today=date(2026, 1, 1), hdd=hdd)['seasons']}
+        self.assertEqual(s['2023/24']['normal_smc'], 525)         # 700 Smc / 2800 × 2100
+        self.assertEqual(s['2024/25']['normal_smc'], 1050)        # 700 Smc / 1400 × 2100: same gas, milder → worse
+        self.assertEqual(s['2023/24']['cold_pct'], 33.3)
 
     def test_season_months_include_partial_seasons(self):
         sm = {s['label']: s for s in self.d['season_months']}

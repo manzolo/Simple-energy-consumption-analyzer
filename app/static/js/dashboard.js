@@ -260,24 +260,28 @@
     if (charts[id]) charts[id].destroy();
     const S = D.seasons || [];
     if (!S.length) { document.getElementById(id).parentElement.innerHTML = `<div class="em-empty">${T('no_seasons')}</div>`; return; }
-    const L = S[S.length - 1];
-    document.getElementById('seasonLine').innerHTML = T('season_line', { s: L.label, v: `<strong>${num(L.smc_per_hdd, 3)}</strong>`, g: num(L.smc, 0), h: num(L.hdd, 0) })
-      + (L.pct != null ? ' ' + T('season_line_vs', { d: delta(L.pct, T('vs_prev_season')) }) : '');
+    const L = S[S.length - 1], avg = D.season_avg_hdd;
+    const kind = (p) => p == null || Math.abs(p) < 3 ? T('in_average') : (p > 0 ? T('cold_colder') : T('cold_milder'));
+    document.getElementById('seasonLine').innerHTML =
+      T('normal_line', { s: L.label, n: `<strong>${num(L.normal_smc, 0)}</strong>`, d: L.pct != null ? delta(L.pct, T('vs_prev_season')) + ' ' + T('vs_prev_season') : '' })
+      + ' ' + T('normal_real', { c: kind(L.cold_pct), h: num(L.hdd, 0), a: num(avg, 0), g: num(L.smc, 0) });
     const smc = css('--em-smc');
+    const colors = S.map((s, i) => i === S.length - 1 ? smc : rgba(smc, 0.45));
     charts[id] = new Chart(document.getElementById(id), {
       type: 'bar',
-      data: { labels: S.map((s) => s.label), datasets: [{ data: S.map((s) => s.smc_per_hdd), backgroundColor: smc, hoverBackgroundColor: smc, borderRadius: 4, barPercentage: 0.7 }] },
+      data: { labels: S.map((s) => s.label), datasets: [{ data: S.map((s) => s.normal_smc), backgroundColor: colors, hoverBackgroundColor: colors, borderRadius: 4, barPercentage: 0.7 }] },
       options: {
         responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
         plugins: { colors: { enabled: false }, legend: { display: false }, tooltip: { callbacks: {
           label: (c) => {
             const s = S[c.dataIndex];
-            const out = [` ${T('smc_per_hdd')}: ${num(s.smc_per_hdd, 3)}`, ` ${T('gas')}: ${num(s.smc, 0)} Smc`, ` ${T('degree_days')}: ${num(s.hdd, 0)}`];
+            const out = [` ${num(s.normal_smc, 0)} Smc`, ` ${T('normal_tip_real', { g: num(s.smc, 0) })}`,
+                         ` ${T('normal_tip_cold', { h: num(s.hdd, 0), p: pctStr(s.cold_pct) })}`];
             if (s.pct != null) out.push(` ${pctStr(s.pct)} ${T('vs_prev_season')}`);
             return out;
           },
         } } },
-        scales: axes((v) => num(v, 2), { yTicks: 4 }),
+        scales: axes((v) => num(v, 0), { yTicks: 5 }),
       },
     });
   }

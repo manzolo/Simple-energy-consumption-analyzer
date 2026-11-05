@@ -163,6 +163,13 @@ def build_dashboard(consumptions, costs, today=None, years_in_chart=4, hdd=None)
                                        '_raw': smc / deg if deg else None})
         for prev, cur in zip(out['seasons'], out['seasons'][1:]):
             cur['pct'] = _pct(cur['_raw'], prev['_raw'])      # from unrounded values
+        # "Normal winter": each season's gas rescaled to the average cold of all complete seasons
+        if out['seasons']:
+            avg = sum(s['hdd'] for s in out['seasons']) / len(out['seasons'])
+            out['season_avg_hdd'] = _r(avg, 0)
+            for s in out['seasons']:
+                s['normal_smc'] = _r(s['_raw'] * avg, 0)
+                s['cold_pct'] = _pct(s['hdd'], avg)
         for s in out['seasons']:
             s.pop('_raw')
 
